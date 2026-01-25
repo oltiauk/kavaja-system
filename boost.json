@@ -9,6 +9,9 @@
         "codex",
         "cursor"
     ],
-    "guidelines": [],
+    "guidelines": [
+        "docs/kavaja_hospital_system_final_plan_.md",
+        "docs/kavaja_hospital_system_technical_plan.md"
+    ],
     "herd_mcp": true
 }
