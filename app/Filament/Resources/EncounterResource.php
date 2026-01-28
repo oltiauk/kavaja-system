@@ -36,7 +36,7 @@ class EncounterResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return static::canViewAny();
+        return false;
     }
 
     public static function canViewAny(): bool
@@ -76,10 +76,15 @@ class EncounterResource extends Resource
             ->schema([
                 Forms\Components\Select::make('patient_id')
                     ->label(__('app.labels.patient'))
-                    ->relationship('patient', 'last_name')
+                    ->relationship(
+                        name: 'patient',
+                        titleAttribute: 'last_name',
+                        modifyQueryUsing: fn (\Illuminate\Database\Eloquent\Builder $query) => $query->orderBy('created_at', 'desc')
+                    )
                     ->getOptionLabelFromRecordUsing(fn ($record) => $record->full_name)
                     ->searchable()
                     ->preload()
+                    ->optionsLimit(5)
                     ->required(),
                 Forms\Components\Select::make('type')
                     ->label(__('app.labels.encounter_type'))
@@ -109,8 +114,24 @@ class EncounterResource extends Resource
                 Forms\Components\Textarea::make('treatment')
                     ->label(__('app.labels.treatment'))
                     ->columnSpanFull(),
-                Forms\Components\Textarea::make('surgical_notes')
+                Forms\Components\FileUpload::make('surgical_notes')
                     ->label(__('app.labels.surgical_notes_hidden'))
+                    ->helperText(__('app.helpers.surgical_notes_hidden'))
+                    ->disk('local')
+                    ->directory(fn (?Encounter $record) => $record
+                        ? "surgical-notes/{$record->patient_id}/{$record->id}"
+                        : 'tmp/surgical-notes')
+                    ->storeFileNamesIn('surgical_notes_original_filename')
+                    ->acceptedFileTypes([
+                        'application/pdf',
+                        'application/msword',
+                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                        'image/jpeg',
+                        'image/png',
+                    ])
+                    ->maxSize(20480)
+                    ->visibility('private')
+                    ->visible(fn (Get $get) => $get('type') === 'hospitalization' && (auth()->user()?->isAdmin() || auth()->user()?->isStaff()))
                     ->columnSpanFull(),
                 Forms\Components\Section::make(__('app.labels.medical_information'))
                     ->statePath('medical_info')
@@ -171,6 +192,9 @@ class EncounterResource extends Resource
                     ->label(__('app.labels.medical_info_complete'))
                     ->visible(fn (Get $get) => $get('type') === 'hospitalization' && (auth()->user()?->isAdmin() || auth()->user()?->isStaff()))
                     ->default(false),
+                Forms\Components\View::make('filament.forms.components.documents-grid')
+                    ->visible(fn (?Encounter $record) => $record !== null)
+                    ->columnSpanFull(),
                 Forms\Components\Section::make(__('app.labels.discharge_paper'))
                     ->visible(fn (Get $get) => $get('type') === 'hospitalization')
                     ->schema([
@@ -197,7 +221,7 @@ class EncounterResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('patient.full_name')
                     ->label(__('app.labels.patient'))
-                    ->searchable(['patient.first_name', 'patient.last_name'])
+                    ->searchable(['patients.first_name', 'patients.last_name'])
                     ->sortable(),
                 Tables\Columns\TextColumn::make('type')
                     ->label(__('app.labels.encounter_type'))
@@ -262,7 +286,7 @@ class EncounterResource extends Resource
     public static function getRelations(): array
     {
         return [
-            \App\Filament\Resources\EncounterResource\RelationManagers\DocumentsRelationManager::class,
+            // Documents are now displayed via DocumentsGridWidget (custom Livewire component)
         ];
     }
 

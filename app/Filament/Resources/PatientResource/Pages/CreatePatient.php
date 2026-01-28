@@ -10,6 +10,11 @@ class CreatePatient extends CreateRecord
 {
     protected static string $resource = PatientResource::class;
 
+    protected function getRedirectUrl(): string
+    {
+        return static::getResource()::getUrl('index');
+    }
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $data['created_by'] = Auth::id();

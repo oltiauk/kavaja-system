@@ -21,6 +21,7 @@ class PatientMedicalInfo extends Model
         'blood_type',
         'height_cm',
         'weight_kg',
+        'has_allergies',
         'allergies',
         'smoking_status',
         'alcohol_use',
@@ -30,6 +31,13 @@ class PatientMedicalInfo extends Model
         'current_medications',
         'updated_by',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'has_allergies' => 'boolean',
+        ];
+    }
 
     public function patient(): BelongsTo
     {

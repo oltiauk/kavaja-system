@@ -34,6 +34,7 @@ class ListDocuments extends ListRecords
                             fn ($encounter) => [$encounter->id => "{$encounter->patient->full_name} (#{$encounter->id})"]
                         ))
                         ->searchable()
+                        ->optionsLimit(5)
                         ->required(),
                     Forms\Components\FileUpload::make('file')
                         ->label(__('app.labels.discharge_paper'))

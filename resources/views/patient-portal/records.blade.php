@@ -1,95 +1,287 @@
 @extends('patient-portal.layouts.portal')
 
 @section('content')
-    <div class="p-8 space-y-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm text-slate-600">{{ __('app.portal.welcome') }}</p>
-                <h2 class="text-2xl font-semibold">{{ $patient->full_name }}</h2>
-            </div>
-            <div class="text-sm text-[var(--color-secondary)]">
-                {{ __('app.labels.token') }}: {{ substr($token, 0, 8) }}…
+    <div x-data="{ imageModal: { open: false, src: '', name: '' } }" class="divide-y divide-slate-100">
+        <!-- Patient header -->
+        <div class="p-6 sm:p-8 border-b border-slate-100">
+            <div class="animate-fade-in-up">
+                <p class="text-sm text-primary-600 font-medium mb-1">{{ __('app.portal.welcome') }}</p>
+                <h2 class="text-2xl sm:text-3xl font-display font-bold text-slate-900">{{ $patient->full_name }}</h2>
             </div>
         </div>
 
-        <section class="grid md:grid-cols-2 gap-4">
-            <div class="rounded-lg border border-slate-100 p-4">
-                <h3 class="text-lg font-semibold mb-2">{{ __('app.labels.personal_information') }}</h3>
-                <dl class="space-y-1 text-sm text-slate-700">
-                    <div class="flex justify-between"><dt>{{ __('app.labels.name') }}</dt><dd>{{ $patient->full_name }}</dd></div>
-                    <div class="flex justify-between"><dt>{{ __('app.labels.date_of_birth') }}</dt><dd>{{ $patient->date_of_birth->toDateString() }}</dd></div>
-                    <div class="flex justify-between"><dt>{{ __('app.labels.gender') }}</dt><dd class="capitalize">{{ __('app.gender.' . $patient->gender) }}</dd></div>
-                    <div class="flex justify-between"><dt>{{ __('app.labels.phone') }}</dt><dd>{{ $patient->phone_number }}</dd></div>
-                    <div class="flex justify-between"><dt>{{ __('app.labels.national_id') }}</dt><dd>{{ $patient->national_id }}</dd></div>
-                    <div class="flex justify-between"><dt>{{ __('app.labels.residency') }}</dt><dd>{{ $patient->residency }}</dd></div>
-                    <div class="flex justify-between"><dt>{{ __('app.labels.emergency_contact') }}</dt><dd>{{ $patient->emergency_contact_name }} ({{ $patient->emergency_contact_relationship }}) - {{ $patient->emergency_contact_phone }}</dd></div>
-                    <div class="flex justify-between"><dt>{{ __('app.labels.insurance') }}</dt><dd>{{ $patient->health_insurance_number }}</dd></div>
-                </dl>
-            </div>
-
-            @if ($patient->medicalInfo)
-                <div class="rounded-lg border border-slate-100 p-4">
-                    <h3 class="text-lg font-semibold mb-2">{{ __('app.labels.medical_information') }}</h3>
-                    <dl class="space-y-1 text-sm text-slate-700">
-                        <div class="flex justify-between"><dt>{{ __('app.labels.blood_type') }}</dt><dd>{{ $patient->medicalInfo->blood_type }}</dd></div>
-                        <div class="flex justify-between"><dt>{{ __('app.labels.height_cm') }}</dt><dd>{{ $patient->medicalInfo->height_cm }} cm</dd></div>
-                        <div class="flex justify-between"><dt>{{ __('app.labels.weight_kg') }}</dt><dd>{{ $patient->medicalInfo->weight_kg }} kg</dd></div>
-                        <div class="flex justify-between"><dt>{{ __('app.labels.allergies') }}</dt><dd class="font-semibold text-[var(--color-primary)]">{{ $patient->medicalInfo->allergies }}</dd></div>
-                        <div class="flex justify-between"><dt>{{ __('app.labels.smoking') }}</dt><dd>{{ $patient->medicalInfo->smoking_status ? __('app.smoking_status.' . $patient->medicalInfo->smoking_status) : '' }}</dd></div>
-                        <div class="flex justify-between"><dt>{{ __('app.labels.alcohol') }}</dt><dd>{{ $patient->medicalInfo->alcohol_use }}</dd></div>
-                        <div class="flex justify-between"><dt>{{ __('app.labels.drug_history') }}</dt><dd>{{ $patient->medicalInfo->drug_use_history }}</dd></div>
-                        <div class="flex justify-between"><dt>{{ __('app.labels.pacemaker_implants') }}</dt><dd>{{ $patient->medicalInfo->pacemaker_implants }}</dd></div>
-                        <div class="flex justify-between"><dt>{{ __('app.labels.anesthesia_reactions') }}</dt><dd>{{ $patient->medicalInfo->anesthesia_reactions }}</dd></div>
-                        <div class="flex justify-between"><dt>{{ __('app.labels.current_medications') }}</dt><dd>{{ $patient->medicalInfo->current_medications }}</dd></div>
-                    </dl>
-                </div>
-            @endif
-        </section>
-
-        <section class="rounded-lg border border-slate-100 p-4">
-            <h3 class="text-lg font-semibold mb-4">{{ __('app.labels.visit_history') }}</h3>
-            <div class="space-y-3">
-                @foreach ($patient->encounters as $encounter)
-                    <div class="border border-slate-100 rounded-lg p-3">
-                        <div class="flex items-center justify-between text-sm text-slate-600 mb-2">
-                            <span class="uppercase tracking-wide font-semibold">
-                                {{ $encounter->type === 'visit' ? __('app.labels.visit') : __('app.labels.hospitalization') }}
-                            </span>
-                            <span>{{ $encounter->admission_date?->toDateString() }}</span>
-                        </div>
-                        <p class="font-semibold text-slate-900">{{ $encounter->main_complaint }}</p>
-                        <p class="text-sm text-slate-700">{{ __('app.labels.doctor') }}: {{ $encounter->doctor_name }}</p>
-                        @if ($encounter->diagnosis)
-                            <p class="text-sm text-slate-700">{{ __('app.labels.diagnosis') }}: {{ $encounter->diagnosis }}</p>
-                        @endif
-                        @if ($encounter->treatment)
-                            <p class="text-sm text-slate-700">{{ __('app.labels.treatment') }}: {{ $encounter->treatment }}</p>
-                        @endif
+        <!-- Personal & Medical Info -->
+        <div class="p-6 sm:p-8">
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Personal Information -->
+                <div class="animate-fade-in-up animation-delay-100">
+                    <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">{{ __('app.labels.personal_information') }}</h3>
+                    <div class="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 space-y-3">
+                        @php
+                            $personalFields = [
+                                ['label' => __('app.labels.name'), 'value' => $patient->full_name],
+                                ['label' => __('app.labels.date_of_birth'), 'value' => $patient->date_of_birth->format('d/m/Y')],
+                                ['label' => __('app.labels.gender'), 'value' => __('app.gender.' . $patient->gender)],
+                                ['label' => __('app.labels.phone'), 'value' => $patient->phone_number],
+                                ['label' => __('app.labels.national_id'), 'value' => $patient->national_id],
+                                ['label' => __('app.labels.residency'), 'value' => $patient->residency],
+                                ['label' => __('app.labels.emergency_contact'), 'value' => $patient->emergency_contact_name . ' (' . $patient->emergency_contact_relationship . ') - ' . $patient->emergency_contact_phone],
+                                ['label' => __('app.labels.insurance'), 'value' => $patient->health_insurance_number],
+                            ];
+                        @endphp
+                        @foreach ($personalFields as $field)
+                            @if ($field['value'])
+                                <div class="text-sm">
+                                    <dt class="text-slate-500 text-xs mb-0.5">{{ $field['label'] }}</dt>
+                                    <dd class="text-slate-900 font-medium">{{ $field['value'] }}</dd>
+                                </div>
+                            @endif
+                        @endforeach
                     </div>
-                @endforeach
-            </div>
-        </section>
+                </div>
 
-        <section class="rounded-lg border border-slate-100 p-4">
-            <h3 class="text-lg font-semibold mb-4">{{ __('app.labels.documents_section') }}</h3>
-            @if ($documents->isEmpty())
-                <p class="text-sm text-slate-600">{{ __('app.portal.no_documents') }}</p>
-            @else
-                <ul class="divide-y divide-slate-100">
-                    @foreach ($documents as $document)
-                        <li class="py-3 flex items-center justify-between">
-                            <div>
-                                <p class="font-medium text-slate-900">{{ $document->original_filename }}</p>
-                                <p class="text-sm text-slate-600">{{ $document->created_at->toDateTimeString() }}</p>
+                <!-- Medical Information -->
+                @if ($patient->medicalInfo)
+                    <div class="animate-fade-in-up animation-delay-200">
+                        <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">{{ __('app.labels.medical_information') }}</h3>
+                        <div class="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 space-y-3">
+                            <!-- Blood type badge -->
+                            @if ($patient->medicalInfo->blood_type)
+                                <div class="text-sm">
+                                    <dt class="text-slate-500 text-xs mb-0.5">{{ __('app.labels.blood_type') }}</dt>
+                                    <dd class="inline-flex items-center px-2.5 py-1 rounded-lg bg-coral-100 text-coral-700 text-sm font-bold">
+                                        {{ $patient->medicalInfo->blood_type }}
+                                    </dd>
+                                </div>
+                            @endif
+
+                            @if ($patient->medicalInfo->height_cm || $patient->medicalInfo->weight_kg)
+                                <div class="flex gap-4 text-sm">
+                                    @if ($patient->medicalInfo->height_cm)
+                                        <div class="flex-1 text-center p-2 rounded-lg bg-white border border-slate-100">
+                                            <p class="text-lg font-semibold text-slate-900">{{ $patient->medicalInfo->height_cm }}<span class="text-xs text-slate-400 ml-0.5">cm</span></p>
+                                            <p class="text-xs text-slate-500">{{ __('app.labels.height_cm') }}</p>
+                                        </div>
+                                    @endif
+                                    @if ($patient->medicalInfo->weight_kg)
+                                        <div class="flex-1 text-center p-2 rounded-lg bg-white border border-slate-100">
+                                            <p class="text-lg font-semibold text-slate-900">{{ $patient->medicalInfo->weight_kg }}<span class="text-xs text-slate-400 ml-0.5">kg</span></p>
+                                            <p class="text-xs text-slate-500">{{ __('app.labels.weight_kg') }}</p>
+                                        </div>
+                                    @endif
+                                </div>
+                            @endif
+
+                            <!-- Allergies - highlighted -->
+                            @if ($patient->medicalInfo->allergies)
+                                <div class="rounded-xl bg-coral-50 border border-coral-100 p-3">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <svg class="w-4 h-4 text-coral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                        </svg>
+                                        <span class="text-xs font-semibold text-coral-700 uppercase tracking-wide">{{ __('app.labels.allergies') }}</span>
+                                    </div>
+                                    <p class="text-sm font-medium text-coral-800">{{ $patient->medicalInfo->allergies }}</p>
+                                </div>
+                            @endif
+
+                            @php
+                                $medicalFields = [
+                                    ['label' => __('app.labels.smoking'), 'value' => $patient->medicalInfo->smoking_status ? __('app.smoking_status.' . $patient->medicalInfo->smoking_status) : null],
+                                    ['label' => __('app.labels.alcohol'), 'value' => $patient->medicalInfo->alcohol_use],
+                                    ['label' => __('app.labels.pacemaker_implants'), 'value' => $patient->medicalInfo->pacemaker_implants],
+                                    ['label' => __('app.labels.anesthesia_reactions'), 'value' => $patient->medicalInfo->anesthesia_reactions],
+                                    ['label' => __('app.labels.current_medications'), 'value' => $patient->medicalInfo->current_medications],
+                                ];
+                            @endphp
+                            @foreach ($medicalFields as $field)
+                                @if ($field['value'])
+                                    <div class="text-sm">
+                                        <dt class="text-slate-500 text-xs mb-0.5">{{ $field['label'] }}</dt>
+                                        <dd class="text-slate-900 font-medium">{{ $field['value'] }}</dd>
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <!-- Visit History with Documents -->
+        <div class="p-6 sm:p-8">
+            <div class="flex items-center justify-between mb-5 animate-fade-in-up animation-delay-200">
+                <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wide">{{ __('app.labels.visit_history') }}</h3>
+                <span class="text-xs text-slate-400">{{ $patient->encounters->count() }}</span>
+            </div>
+
+            <div class="space-y-3">
+                @forelse ($patient->encounters as $index => $encounter)
+                    <div
+                        x-data="{ open: {{ $index === 0 ? 'true' : 'false' }} }"
+                        class="rounded-xl border border-slate-100 overflow-hidden animate-fade-in-up"
+                        style="animation-delay: {{ 0.1 + $index * 0.05 }}s; opacity: 0;"
+                    >
+                        <!-- Encounter Header - Clickable -->
+                        <button
+                            @click="open = !open"
+                            class="w-full p-4 text-left hover:bg-slate-50 transition-colors"
+                        >
+                            <div class="flex items-start justify-between gap-3 mb-2">
+                                <div class="flex items-center gap-2">
+                                    @if ($encounter->type === 'hospitalization')
+                                        <span class="px-2 py-0.5 rounded-md bg-primary-50 text-primary-600 text-xs font-medium">
+                                            {{ __('app.labels.hospitalization') }}
+                                        </span>
+                                    @else
+                                        <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-xs font-medium">
+                                            {{ __('app.labels.visit') }}
+                                        </span>
+                                    @endif
+                                    @if ($encounter->documents->count() > 0)
+                                        <span class="text-xs text-slate-400">{{ $encounter->documents->count() }} {{ __('app.labels.documents') }}</span>
+                                    @endif
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <time class="text-xs text-slate-400">
+                                        {{ $encounter->admission_date?->format('d/m/Y') }}
+                                    </time>
+                                    <svg
+                                        class="w-4 h-4 text-slate-400 transition-transform duration-200"
+                                        :class="{ 'rotate-180': open }"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </div>
                             </div>
-                            <a
-                                href="{{ route('patient.documents.download', ['token' => $token, 'document' => $document->id]) }}"
-                                class="text-[var(--color-primary)] font-semibold text-sm"
-                            >{{ __('app.actions.download') }}</a>
-                        </li>
-                    @endforeach
-                </ul>
-            @endif
-        </section>
+
+                            <h4 class="font-medium text-slate-900 mb-1">
+                                {{ $encounter->main_complaint }}
+                            </h4>
+
+                            <p class="text-sm text-slate-500">{{ $encounter->doctor_name }}</p>
+                        </button>
+
+                        <!-- Expandable Content -->
+                        <div
+                            x-show="open"
+                            x-collapse
+                            class="border-t border-slate-100"
+                        >
+                            <div class="p-4 space-y-4">
+                                <!-- Diagnosis & Treatment -->
+                                @if ($encounter->diagnosis || $encounter->treatment)
+                                    <div class="space-y-2 text-sm">
+                                        @if ($encounter->diagnosis)
+                                            <p><span class="text-slate-400">{{ __('app.labels.diagnosis') }}:</span> <span class="text-slate-600">{{ $encounter->diagnosis }}</span></p>
+                                        @endif
+                                        @if ($encounter->treatment)
+                                            <p><span class="text-slate-400">{{ __('app.labels.treatment') }}:</span> <span class="text-slate-600">{{ $encounter->treatment }}</span></p>
+                                        @endif
+                                    </div>
+                                @endif
+
+                                <!-- Documents for this encounter -->
+                                @if ($encounter->documents->count() > 0)
+                                    <div class="pt-3 border-t border-slate-50">
+                                        <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">{{ __('app.labels.documents') }}</p>
+                                        <div class="space-y-1">
+                                            @foreach ($encounter->documents as $document)
+                                                @php
+                                                    $isImage = str_starts_with($document->mime_type, 'image/');
+                                                    $isPdf = $document->mime_type === 'application/pdf';
+                                                    $isPreviewable = $isImage || $isPdf;
+                                                @endphp
+                                                <div class="group flex items-center gap-2 p-2 -mx-2 rounded-lg hover:bg-slate-50 transition-colors">
+                                                    <div class="flex-1 min-w-0">
+                                                        <p class="text-sm font-medium text-slate-700 truncate">
+                                                            {{ $document->original_filename }}
+                                                        </p>
+                                                        <p class="text-xs text-slate-400">
+                                                            {{ $document->created_at->format('d/m/Y') }}
+                                                        </p>
+                                                    </div>
+                                                    <div class="flex items-center gap-1 shrink-0">
+                                                        @if ($isImage)
+                                                            {{-- Image preview button - opens modal --}}
+                                                            <button
+                                                                type="button"
+                                                                @click="imageModal = { open: true, src: '{{ route('patient.documents.preview', ['token' => $token, 'document' => $document->id]) }}', name: '{{ $document->original_filename }}' }"
+                                                                class="p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-primary-600 transition-colors"
+                                                                title="{{ __('app.actions.preview') }}"
+                                                            >
+                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                                </svg>
+                                                            </button>
+                                                        @elseif ($isPdf)
+                                                            {{-- PDF preview button - opens in new tab --}}
+                                                            <a
+                                                                href="{{ route('patient.documents.preview', ['token' => $token, 'document' => $document->id]) }}"
+                                                                target="_blank"
+                                                                class="p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-primary-600 transition-colors"
+                                                                title="{{ __('app.actions.preview') }}"
+                                                            >
+                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                                </svg>
+                                                            </a>
+                                                        @endif
+                                                        {{-- Download button --}}
+                                                        <a
+                                                            href="{{ route('patient.documents.download', ['token' => $token, 'document' => $document->id]) }}"
+                                                            class="p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-primary-600 transition-colors"
+                                                            title="{{ __('app.actions.download') }}"
+                                                        >
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                                            </svg>
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @else
+                                    <p class="text-xs text-slate-400 pt-2">{{ __('app.portal.no_documents') }}</p>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-sm text-slate-400 py-4">{{ __('app.empty.no_visits') }}</p>
+                @endforelse
+            </div>
+        </div>
+
+        <!-- Image Preview Modal -->
+        <div
+            x-show="imageModal.open"
+            x-cloak
+            @click="imageModal.open = false"
+            @keydown.escape.window="imageModal.open = false"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50"
+        >
+            <div @click.stop class="relative bg-white rounded-lg shadow-xl max-w-2xl max-h-[80vh] overflow-hidden">
+                <button
+                    @click="imageModal.open = false"
+                    class="absolute top-2 right-2 p-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+                <img
+                    :src="imageModal.src"
+                    :alt="imageModal.name"
+                    class="max-w-full max-h-[80vh] object-contain"
+                />
+            </div>
+        </div>
     </div>
 @endsection

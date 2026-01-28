@@ -2,12 +2,13 @@
 
 namespace App\Filament\Resources\EncounterResource\RelationManagers;
 
-use App\Models\Document;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
+use Filament\Tables\Columns\Layout\Grid;
+use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -54,27 +55,21 @@ class DocumentsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with('uploadedBy'))
             ->columns([
-                Tables\Columns\TextColumn::make('original_filename')
-                    ->label(__('app.labels.filename'))
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('type')
-                    ->badge()
-                    ->formatStateUsing(function (string $state) {
-                        return match ($state) {
-                            'diagnostic_image' => __('app.labels.diagnostic_image'),
-                            'report' => __('app.labels.report'),
-                            default => __('app.labels.other'),
-                        };
-                    }),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label(__('app.labels.uploaded_at'))
-                    ->dateTime()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('uploadedBy.name')
-                    ->label(__('app.labels.uploaded_by'))
-                    ->sortable(),
+                Grid::make()
+                    ->schema([
+                        ViewColumn::make('document')
+                            ->view('filament.tables.columns.document-card'),
+                    ]),
             ])
+            ->contentGrid([
+                'default' => 2,
+                'sm' => 3,
+                'md' => 4,
+                'lg' => 5,
+            ])
+            ->defaultSort('created_at', 'desc')
             ->headerActions([
                 Tables\Actions\CreateAction::make()
                     ->label(__('app.actions.upload_document'))
@@ -95,13 +90,6 @@ class DocumentsRelationManager extends RelationManager
 
                         return $data;
                     }),
-            ])
-            ->actions([
-                Tables\Actions\Action::make('download')
-                    ->label(__('app.actions.download'))
-                    ->icon('heroicon-o-arrow-down-tray')
-                    ->url(fn (Document $record) => route('documents.download', $record))
-                    ->openUrlInNewTab(),
             ]);
     }
 }

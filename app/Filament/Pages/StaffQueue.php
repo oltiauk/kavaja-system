@@ -55,7 +55,7 @@ class StaffQueue extends Page implements HasTable
                 TextColumn::make('patient.full_name')
                     ->label(__('app.labels.patient'))
                     ->sortable()
-                    ->searchable(['patient.first_name', 'patient.last_name']),
+                    ->searchable(['patients.first_name', 'patients.last_name']),
                 TextColumn::make('doctor_name')->label(__('app.labels.doctor'))->sortable(),
                 TextColumn::make('main_complaint')->label(__('app.labels.complaint'))->limit(30),
                 TextColumn::make('admission_date')->dateTime()->label(__('app.labels.admitted'))->sortable(),

@@ -28,7 +28,7 @@ class ReportService
                 'total_hospitalizations' => Encounter::where('type', 'hospitalization')
                     ->whereBetween('admission_date', [$startDate, $endDate])
                     ->count(),
-                'total_surgeries' => Encounter::whereNotNull('surgical_notes')
+                'total_surgeries' => Encounter::whereNotNull('surgical_notes_file_path')
                     ->whereBetween('admission_date', [$startDate, $endDate])
                     ->count(),
                 'total_discharges' => Encounter::where('status', 'discharged')

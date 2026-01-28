@@ -68,6 +68,29 @@ class PatientPortalController extends Controller
         return Storage::download($document->file_path, $document->original_filename);
     }
 
+    public function previewDocument(string $token, Document $document)
+    {
+        $paper = $this->getDischargePaper($token);
+        $this->ensureVerified($token);
+
+        abort_unless($document->patient_id === $paper->patient_id, 403);
+
+        $previewableMimes = [
+            'image/jpeg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+            'application/pdf',
+        ];
+
+        abort_unless(in_array($document->mime_type, $previewableMimes), 404);
+
+        return response()->file(
+            Storage::disk('local')->path($document->file_path),
+            ['Content-Type' => $document->mime_type]
+        );
+    }
+
     private function sessionKey(string $token): string
     {
         return "patient_portal_verified_{$token}";

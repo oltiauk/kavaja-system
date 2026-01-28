@@ -122,6 +122,11 @@ class EditEncounter extends EditRecord
                 ->icon('heroicon-o-qr-code')
                 ->visible(fn () => (bool) $this->record->dischargePaper)
                 ->url(fn () => route('discharge-papers.with-qr', $this->record->dischargePaper), true),
+            Actions\Action::make('downloadSurgicalNotes')
+                ->label(__('app.actions.download_surgical_notes'))
+                ->icon('heroicon-o-arrow-down-tray')
+                ->visible(fn () => $this->record->isHospitalization() && (bool) $this->record->surgical_notes_file_path)
+                ->url(fn () => route('encounters.surgical-notes', $this->record), true),
             Actions\DeleteAction::make(),
         ];
     }
@@ -145,6 +150,11 @@ class EditEncounter extends EditRecord
             ];
         }
 
+        // Load surgical notes file path for FileUpload component
+        if ($this->record->surgical_notes_file_path) {
+            $data['surgical_notes'] = $this->record->surgical_notes_file_path;
+        }
+
         return $data;
     }
 
@@ -152,6 +162,41 @@ class EditEncounter extends EditRecord
     {
         $this->medicalInfo = $data['medical_info'] ?? [];
         unset($data['medical_info']);
+
+        // Handle surgical notes file upload
+        if (isset($data['surgical_notes'])) {
+            if (filled($data['surgical_notes'])) {
+                $filePath = $data['surgical_notes'];
+
+                // If file is in tmp directory, move it to final location
+                if (str_starts_with($filePath, 'tmp/surgical-notes')) {
+                    $finalPath = "surgical-notes/{$this->record->patient_id}/{$this->record->id}/".basename($filePath);
+                    Storage::disk('local')->move($filePath, $finalPath);
+                    $filePath = $finalPath;
+                }
+
+                // Delete old file if it exists and is different
+                if ($this->record->surgical_notes_file_path
+                    && $this->record->surgical_notes_file_path !== $filePath
+                    && Storage::disk('local')->exists($this->record->surgical_notes_file_path)) {
+                    Storage::disk('local')->delete($this->record->surgical_notes_file_path);
+                }
+
+                $data['surgical_notes_file_path'] = $filePath;
+                $data['surgical_notes_mime_type'] = Storage::disk('local')->mimeType($filePath);
+                $data['surgical_notes_file_size'] = Storage::disk('local')->size($filePath);
+            } else {
+                // If file is removed, delete old file and clear metadata
+                if ($this->record->surgical_notes_file_path && Storage::disk('local')->exists($this->record->surgical_notes_file_path)) {
+                    Storage::disk('local')->delete($this->record->surgical_notes_file_path);
+                }
+                $data['surgical_notes_file_path'] = null;
+                $data['surgical_notes_original_filename'] = null;
+                $data['surgical_notes_mime_type'] = null;
+                $data['surgical_notes_file_size'] = null;
+            }
+        }
+        unset($data['surgical_notes']);
 
         if (($data['type'] ?? $this->record->type) === 'visit') {
             $data['medical_info_complete'] = true;
