@@ -388,7 +388,11 @@ class HospitalizationResource extends Resource
                             ->weight(FontWeight::Bold)
                             ->size(Tables\Columns\TextColumn\TextColumnSize::Large)
                             ->searchable(['first_name', 'last_name'])
-                            ->sortable(),
+                            ->sortable(query: fn (Builder $query, string $direction) => $query
+                                ->join('patients', 'encounters.patient_id', '=', 'patients.id')
+                                ->orderBy('patients.last_name', $direction)
+                                ->orderBy('patients.first_name', $direction)
+                                ->select('encounters.*')),
                         Tables\Columns\TextColumn::make('room_number')
                             ->label(__('app.labels.room_number'))
                             ->badge()
@@ -405,18 +409,7 @@ class HospitalizationResource extends Resource
                             ->grow(false),
                     ]),
 
-                    // Allergies warning (red, prominent) - only shows if has_allergies is true
-                    Tables\Columns\TextColumn::make('patient.medicalInfo.allergies')
-                        ->label(__('app.labels.allergies'))
-                        ->icon('heroicon-m-exclamation-triangle')
-                        ->color('danger')
-                        ->weight(FontWeight::SemiBold)
-                        ->size(Tables\Columns\TextColumn\TextColumnSize::Small)
-                        ->limit(60)
-                        ->formatStateUsing(fn (?string $state) => $state ? "! {$state}" : null)
-                        ->hidden(fn (?Encounter $record): bool => ! $record?->patient?->medicalInfo?->has_allergies || blank($record?->patient?->medicalInfo?->allergies)),
-
-                    // Diagnosis
+                    // Diagnosis + Allergies (right aligned)
                     Split::make([
                         Tables\Columns\TextColumn::make('diagnosis')
                             ->label(__('app.labels.diagnosis'))
@@ -424,26 +417,23 @@ class HospitalizationResource extends Resource
                             ->limit(80)
                             ->color('primary')
                             ->placeholder('—'),
-                    ]),
-
-                    // Main complaint
-                    Split::make([
-                        Tables\Columns\TextColumn::make('main_complaint')
-                            ->label(__('app.labels.main_complaint'))
+                        Tables\Columns\TextColumn::make('patient.medicalInfo.allergies')
+                            ->icon('heroicon-m-exclamation-triangle')
+                            ->color('danger')
+                            ->weight(FontWeight::SemiBold)
+                            ->size(Tables\Columns\TextColumn\TextColumnSize::Small)
                             ->limit(60)
-                            ->color('gray'),
+                            ->formatStateUsing(fn (?string $state) => $state ? "! {$state}" : null)
+                            ->grow(false)
+                            ->placeholder(''),
                     ]),
 
-                    // Doctor + Medical info status
+                    // Doctor
                     Split::make([
                         Tables\Columns\TextColumn::make('doctor_name')
                             ->label(__('app.labels.doctor'))
                             ->icon('heroicon-m-user')
                             ->searchable(),
-                        Tables\Columns\IconColumn::make('medical_info_complete')
-                            ->label(__('app.labels.medical_info_complete'))
-                            ->boolean()
-                            ->grow(false),
                     ]),
 
                     // Dates

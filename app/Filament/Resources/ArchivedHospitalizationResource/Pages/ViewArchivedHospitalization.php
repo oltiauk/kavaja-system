@@ -11,6 +11,11 @@ class ViewArchivedHospitalization extends ViewRecord
 {
     protected static string $resource = ArchivedHospitalizationResource::class;
 
+    public function getTitle(): string
+    {
+        return $this->record->full_name;
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -19,7 +24,7 @@ class ViewArchivedHospitalization extends ViewRecord
                 ->icon('heroicon-o-arrow-uturn-left')
                 ->color('success')
                 ->url(fn () => HospitalizationResource::getUrl('create', [
-                    'patient_id' => $this->record->patient_id,
+                    'patient_id' => $this->record->id,
                 ])),
         ];
     }

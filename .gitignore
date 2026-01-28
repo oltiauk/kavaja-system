@@ -25,3 +25,4 @@ Thumbs.db
 php.ini
 .nginx.conf
 public/.user.ini
+resources/lang/vendor/

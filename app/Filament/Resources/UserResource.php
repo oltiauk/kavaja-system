@@ -17,6 +17,8 @@ class UserResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-lock-closed';
 
+    protected static ?int $navigationSort = 99;
+
     protected static ?string $navigationLabel = 'Users';
 
     public static function getNavigationLabel(): string

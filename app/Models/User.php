@@ -67,16 +67,24 @@ class User extends Authenticatable
 
     public function canRegisterPatients(): bool
     {
-        return $this->isAdmin() || $this->isAdministration();
+        return $this->isAdmin() || $this->isAdministration() || $this->isStaff();
     }
 
     public function canManageMedicalInfo(): bool
     {
-        return $this->isAdmin() || $this->isStaff();
+        return $this->isAdmin() || $this->isAdministration() || $this->isStaff();
     }
 
     public function canViewReports(): bool
     {
         return $this->isAdmin();
+    }
+
+    /**
+     * Check if user is staff or administration (same permissions).
+     */
+    public function isRegularUser(): bool
+    {
+        return $this->isStaff() || $this->isAdministration();
     }
 }
