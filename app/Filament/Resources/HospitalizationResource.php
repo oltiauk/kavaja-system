@@ -318,10 +318,22 @@ class HospitalizationResource extends Resource
                                 ->successNotificationTitle(__('app.notifications.discharge_paper_uploaded'))
                                 ->action(function (array $data, Encounter $record, $livewire): void {
                                     try {
+                                        // Debug logging
+                                        \Log::info('Discharge paper upload - data received', [
+                                            'file_data' => $data['file'] ?? null,
+                                            'file_data_type' => gettype($data['file'] ?? null),
+                                            'original_filename' => $data['original_filename'] ?? null,
+                                            'encounter_id' => $record->id,
+                                        ]);
+                                        
                                         static::storeDischargePaper($record, $data, false);
                                         $record->refresh();
                                         $livewire->dispatch('$refresh');
                                     } catch (\RuntimeException $e) {
+                                        \Log::error('Discharge paper upload failed', [
+                                            'error' => $e->getMessage(),
+                                            'trace' => $e->getTraceAsString(),
+                                        ]);
                                         throw ValidationException::withMessages([
                                             'file' => __('app.errors.file_processing_failed').': '.$e->getMessage(),
                                         ]);
@@ -568,7 +580,45 @@ class HospitalizationResource extends Resource
     {
         $encounter->loadMissing(['patient', 'dischargePaper']);
         $patient = $encounter->patient;
-        $filePath = $data['file'];
+        
+        // Extract file path from array structure (Filament FileUpload may return array with UUID keys)
+        $fileData = $data['file'];
+        
+        \Log::info('storeDischargePaper - processing file data', [
+            'file_data' => $fileData,
+            'file_data_type' => gettype($fileData),
+            'is_array' => is_array($fileData),
+            'file_data_structure' => is_array($fileData) ? [
+                'count' => count($fileData),
+                'first_element' => $fileData[0] ?? null,
+                'first_element_type' => gettype($fileData[0] ?? null),
+            ] : null,
+        ]);
+        
+        if (is_array($fileData) && ! empty($fileData)) {
+            // If first element is an array/object, extract the file path from it
+            if (is_array($fileData[0] ?? null)) {
+                $filePath = array_values($fileData[0])[0] ?? null;
+                \Log::info('Extracted file path from nested array', ['file_path' => $filePath]);
+            } else {
+                // If it's a simple array, get the first element
+                $filePath = reset($fileData);
+                \Log::info('Extracted file path from simple array', ['file_path' => $filePath]);
+            }
+        } else {
+            $filePath = $fileData;
+            \Log::info('Using file data directly as string', ['file_path' => $filePath]);
+        }
+        
+        if (empty($filePath) || ! is_string($filePath)) {
+            \Log::error('Invalid file path extracted', [
+                'file_path' => $filePath,
+                'file_path_type' => gettype($filePath),
+                'file_data' => $fileData,
+            ]);
+            throw new \RuntimeException('Invalid file data provided. Expected file path string or array with file path.');
+        }
+        
         $extension = pathinfo($filePath, PATHINFO_EXTENSION);
         $originalFilename = $data['original_filename'] ?? basename($filePath);
         $pathBase = "discharge-papers/{$patient->id}/{$encounter->id}";
