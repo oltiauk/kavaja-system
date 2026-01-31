@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('patient_medical_info', function (Blueprint $table) {
-            //
+            $table->boolean('has_allergies')->default(false)->after('weight_kg');
         });
     }
 
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('patient_medical_info', function (Blueprint $table) {
-            //
+            $table->dropColumn('has_allergies');
         });
     }
 };
