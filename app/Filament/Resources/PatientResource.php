@@ -88,13 +88,48 @@ class PatientResource extends Resource
                         'other' => __('app.gender.other'),
                     ])
                     ->required(),
-                Forms\Components\TextInput::make('phone_number')
-                    ->label(__('app.labels.phone'))
-                    ->tel()
-                    ->maxLength(50),
+                Forms\Components\Grid::make(4)
+                    ->schema([
+                        Forms\Components\Select::make('phone_prefix')
+                            ->label(__('app.labels.phone_prefix'))
+                            ->options(static::phoneCountryCodes())
+                            ->default('+383')
+                            ->searchable()
+                            ->columnSpan(1)
+                            ->dehydrated(false)
+                            ->afterStateHydrated(function ($state, $set, ?Patient $record): void {
+                                if ($record?->phone_number && preg_match('/^(\+\d{1,5})\s*(.*)$/', $record->phone_number, $matches)) {
+                                    $set('phone_prefix', $matches[1]);
+                                    $set('phone_number', $matches[2]);
+                                } else {
+                                    $set('phone_prefix', '+383');
+                                }
+                            }),
+                        Forms\Components\TextInput::make('phone_number')
+                            ->label(__('app.labels.phone'))
+                            ->tel()
+                            ->maxLength(50)
+                            ->columnSpan(3)
+                            ->dehydrateStateUsing(function ($state, $get): ?string {
+                                $prefix = trim($get('phone_prefix') ?? '+383');
+                                $number = trim($state ?? '');
+
+                                if ($number === '') {
+                                    return null;
+                                }
+
+                                return "{$prefix} {$number}";
+                            })
+                            ->afterStateHydrated(function ($state, $set, ?Patient $record): void {
+                                if ($record?->phone_number && preg_match('/^(\+\d{1,5})\s*(.*)$/', $record->phone_number, $matches)) {
+                                    $set('phone_number', $matches[2]);
+                                }
+                            }),
+                    ]),
                 Forms\Components\TextInput::make('national_id')
                     ->label(__('app.labels.national_id'))
-                    ->maxLength(100),
+                    ->maxLength(100)
+                    ->unique(table: Patient::class, ignoreRecord: true),
                 Forms\Components\TextInput::make('residency')
                     ->label(__('app.labels.residency'))
                     ->maxLength(255),
@@ -103,10 +138,44 @@ class PatientResource extends Resource
                         Forms\Components\TextInput::make('emergency_contact_name')
                             ->label(__('app.labels.emergency_contact_name'))
                             ->maxLength(255),
-                        Forms\Components\TextInput::make('emergency_contact_phone')
-                            ->label(__('app.labels.emergency_contact_phone'))
-                            ->tel()
-                            ->maxLength(50),
+                        Forms\Components\Grid::make(4)
+                            ->schema([
+                                Forms\Components\Select::make('emergency_phone_prefix')
+                                    ->label(__('app.labels.phone_prefix'))
+                                    ->options(static::phoneCountryCodes())
+                                    ->default('+383')
+                                    ->searchable()
+                                    ->columnSpan(1)
+                                    ->dehydrated(false)
+                                    ->afterStateHydrated(function ($state, $set, ?Patient $record): void {
+                                        if ($record?->emergency_contact_phone && preg_match('/^(\+\d{1,5})\s*(.*)$/', $record->emergency_contact_phone, $matches)) {
+                                            $set('emergency_phone_prefix', $matches[1]);
+                                            $set('emergency_contact_phone', $matches[2]);
+                                        } else {
+                                            $set('emergency_phone_prefix', '+383');
+                                        }
+                                    }),
+                                Forms\Components\TextInput::make('emergency_contact_phone')
+                                    ->label(__('app.labels.emergency_contact_phone'))
+                                    ->tel()
+                                    ->maxLength(50)
+                                    ->columnSpan(3)
+                                    ->dehydrateStateUsing(function ($state, $get): ?string {
+                                        $prefix = trim($get('emergency_phone_prefix') ?? '+383');
+                                        $number = trim($state ?? '');
+
+                                        if ($number === '') {
+                                            return null;
+                                        }
+
+                                        return "{$prefix} {$number}";
+                                    })
+                                    ->afterStateHydrated(function ($state, $set, ?Patient $record): void {
+                                        if ($record?->emergency_contact_phone && preg_match('/^(\+\d{1,5})\s*(.*)$/', $record->emergency_contact_phone, $matches)) {
+                                            $set('emergency_contact_phone', $matches[2]);
+                                        }
+                                    }),
+                            ]),
                         Forms\Components\TextInput::make('emergency_contact_relationship')
                             ->label(__('app.labels.emergency_contact_relationship'))
                             ->maxLength(100),
@@ -174,6 +243,31 @@ class PatientResource extends Resource
             'index' => Pages\ListPatients::route('/'),
             'create' => Pages\CreatePatient::route('/create'),
             'edit' => Pages\EditPatient::route('/{record}/edit'),
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected static function phoneCountryCodes(): array
+    {
+        return [
+            '+383' => '+383',
+            '+355' => '+355',
+            '+389' => '+389',
+            '+381' => '+381',
+            '+382' => '+382',
+            '+387' => '+387',
+            '+385' => '+385',
+            '+386' => '+386',
+            '+49' => '+49',
+            '+43' => '+43',
+            '+41' => '+41',
+            '+39' => '+39',
+            '+44' => '+44',
+            '+33' => '+33',
+            '+46' => '+46',
+            '+1' => '+1',
         ];
     }
 }

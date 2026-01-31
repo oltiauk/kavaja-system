@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\HospitalizationResource\Pages;
 use App\Filament\Resources\HospitalizationResource\RelationManagers\DocumentsRelationManager;
+use App\Forms\Components\DiagnosisInput;
 use App\Models\Doctor;
 use App\Models\Encounter;
 use App\Models\Patient;
@@ -107,7 +108,7 @@ class HospitalizationResource extends Resource
                                 modifyQueryUsing: fn (\Illuminate\Database\Eloquent\Builder $query) => $query->orderBy('created_at', 'desc')
                             )
                             ->getOptionLabelFromRecordUsing(fn (Patient $record) => $record->full_name)
-                            ->searchable()
+                            ->searchable(['first_name', 'last_name'])
                             ->preload()
                             ->optionsLimit(5)
                             ->required()
@@ -121,7 +122,7 @@ class HospitalizationResource extends Resource
                             ),
                         Forms\Components\Placeholder::make('patient_info')
                             ->content(fn (Get $get) => view('filament.forms.patient-info-card', [
-                                'patient' => Patient::find($get('patient_id')),
+                                'patient' => Patient::with('medicalInfo')->find($get('patient_id')),
                             ]))
                             ->visible(fn (Get $get) => filled($get('patient_id'))),
                     ]),
@@ -169,12 +170,15 @@ class HospitalizationResource extends Resource
                     ->label(__('app.labels.main_complaint'))
                     ->required()
                     ->columnSpanFull(),
-                Forms\Components\Textarea::make('diagnosis')
+                DiagnosisInput::make('diagnosis')
                     ->label(__('app.labels.diagnosis'))
                     ->required()
                     ->columnSpanFull(),
                 Forms\Components\Textarea::make('treatment')
                     ->label(__('app.labels.treatment'))
+                    ->columnSpanFull(),
+                Forms\Components\Textarea::make('operative_procedure')
+                    ->label(__('app.labels.operative_procedure'))
                     ->columnSpanFull(),
                 Forms\Components\FileUpload::make('surgical_notes')
                     ->label(__('app.labels.surgical_notes_hidden'))

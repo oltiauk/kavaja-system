@@ -32,6 +32,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->brandLogo(asset('images/kavaja-logo.png'))
             ->brandLogoHeight('3rem')
+            ->defaultThemeMode(\Filament\Enums\ThemeMode::Light)
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([

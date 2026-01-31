@@ -109,7 +109,15 @@ return [
         'anesthesia_reactions' => 'Reagime ndaj anestezisë',
         'current_medications' => 'Medikamentet aktuale',
         'diagnosis' => 'Diagnoza',
+        'diagnoses' => 'Diagnozat',
+        'new_diagnosis' => 'Diagnoza e re',
+        'add_new_diagnosis' => 'Shto diagnozë të re',
+        'usage_count' => 'Përdorimi',
+        'delete_diagnosis' => 'Fshi diagnozën',
+        'phone_prefix' => 'Prefiksi',
+        'phone_number' => 'Numri',
         'treatment' => 'Trajtimi',
+        'operative_procedure' => 'Procedura operative',
         'examinations' => 'Ekzaminimet',
         'year_of_birth' => 'Viti i lindjes',
         'clinic' => 'Klinika',
@@ -139,6 +147,8 @@ return [
         'sort_order' => 'Numri më i ulët shfaqet i pari në listë',
         'surgical_notes_hidden' => 'Ky dokument nuk është i dukshëm për pacientët',
         'room_selection' => 'Zgjidhni katin, dhomën dhe shtratin',
+        'diagnosis_suggestions' => 'Klikoni për të zgjedhur, ose vazhdoni të shkruani',
+        'add_diagnosis_modal' => 'Shtoni një diagnozë të re në listën e sugjerimeve për përdorim të ardhshëm.',
     ],
     'filters' => [
         'all' => 'Të gjitha',
@@ -222,5 +232,6 @@ return [
     'notifications' => [
         'discharge_paper_uploaded' => 'Fletëlëshimi u ngarkua me sukses',
         'discharge_paper_replaced' => 'Fletëlëshimi u zëvendësua me sukses',
+        'diagnosis_added' => 'Diagnoza u shtua në listën e sugjerimeve',
     ],
 ];

@@ -1,0 +1,6 @@
+/* Ensure numbered pagination links are visible at all widths. */
+.fi-pagination-items {
+    display: flex !important;
+    grid-column: 2;
+    justify-self: center;
+}

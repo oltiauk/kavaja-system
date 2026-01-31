@@ -26,6 +26,7 @@ class Encounter extends Model
         'room_number',
         'diagnosis',
         'treatment',
+        'operative_procedure',
         'surgical_notes_file_path',
         'surgical_notes_original_filename',
         'surgical_notes_mime_type',

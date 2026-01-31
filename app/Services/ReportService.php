@@ -55,13 +55,18 @@ class ReportService
 
     private function getCommonDiagnoses(Carbon $start, Carbon $end): array
     {
-        return Encounter::selectRaw('diagnosis, COUNT(*) as count')
+        return Encounter::selectRaw('LOWER(TRIM(diagnosis)) as normalized_diagnosis, MIN(diagnosis) as diagnosis, COUNT(*) as count')
             ->whereNotNull('diagnosis')
+            ->where('diagnosis', '!=', '')
             ->whereBetween('admission_date', [$start, $end])
-            ->groupBy('diagnosis')
+            ->groupBy('normalized_diagnosis')
             ->orderByDesc('count')
             ->limit(10)
             ->get()
+            ->map(fn ($item) => [
+                'diagnosis' => $item->diagnosis,
+                'count' => $item->count,
+            ])
             ->toArray();
     }
 

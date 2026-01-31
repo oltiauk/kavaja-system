@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\DiagnosisController;
 use App\Http\Controllers\DocumentDownloadController;
 use App\Http\Controllers\PatientPortalController;
 use App\Http\Controllers\VisitPdfController;
@@ -24,4 +25,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/discharge-papers/{dischargePaper}/with-qr', [DocumentDownloadController::class, 'dischargeWithQr'])->name('discharge-papers.with-qr');
     Route::get('/encounters/{encounter}/surgical-notes', [DocumentDownloadController::class, 'surgicalNotes'])->name('encounters.surgical-notes');
     Route::get('/visits/{encounter}/print', [VisitPdfController::class, 'show'])->name('visits.print');
+
+    // API routes for internal use
+    Route::get('/api/diagnoses/search', [DiagnosisController::class, 'search'])->name('api.diagnoses.search');
+    Route::post('/api/diagnoses', [DiagnosisController::class, 'store'])->name('api.diagnoses.store');
 });

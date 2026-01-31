@@ -20,7 +20,22 @@
         @endif
         @vite('resources/css/app.css')
     </head>
-    <body class="bg-[#FDFDFC] dark:bg-[#0a0a0a] text-[#1b1b18] flex p-6 lg:p-8 items-center lg:justify-center min-h-screen flex-col">
-<h1 class="bg-blue-500">nana jote</h1>
+    <body class="bg-[#FDFDFC] dark:bg-[#0a0a0a] text-[#1b1b18] dark:text-white flex p-6 lg:p-8 items-center lg:justify-center min-h-screen flex-col">
+        <div class="flex flex-col items-center gap-8 max-w-md w-full">
+            <!-- Logo -->
+            <div class="h-20 w-20 rounded-xl bg-white dark:bg-[#1b1b18] shadow-lg flex items-center justify-center overflow-hidden p-3">
+                <img src="{{ asset('images/kavaja-logo.png') }}" alt="Spitali Kavajë" class="h-full w-full object-contain">
+            </div>
+            
+            <!-- Text -->
+            <p class="text-xl lg:text-2xl font-medium text-center text-[#1b1b18] dark:text-white">
+                Qitu ka mu kon faqja e juj
+            </p>
+            
+            <!-- Button -->
+            <a href="/admin" class="w-full px-8 py-4 bg-gradient-to-r from-[#F12359] to-[#c41745] text-white rounded-xl font-medium text-center shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+                Prekeni per me shku ne sistem qe eshte /admin
+            </a>
+        </div>
     </body>
 </html>

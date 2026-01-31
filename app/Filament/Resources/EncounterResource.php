@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\EncounterResource\Pages;
+use App\Forms\Components\DiagnosisInput;
 use App\Models\Encounter;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -108,7 +109,7 @@ class EncounterResource extends Resource
                 Forms\Components\TextInput::make('doctor_name')
                     ->label(__('app.labels.doctor'))
                     ->required(),
-                Forms\Components\Textarea::make('diagnosis')
+                DiagnosisInput::make('diagnosis')
                     ->label(__('app.labels.diagnosis'))
                     ->columnSpanFull(),
                 Forms\Components\Textarea::make('treatment')
