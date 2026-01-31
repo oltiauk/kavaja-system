@@ -1,8 +1,6 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -11,9 +9,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('patient_medical_info', function (Blueprint $table) {
-            $table->boolean('has_allergies')->default(false)->after('weight_kg');
-        });
+        // Column is added in 2026_01_31_151755 migration
     }
 
     /**
@@ -21,8 +17,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('patient_medical_info', function (Blueprint $table) {
-            $table->dropColumn('has_allergies');
-        });
+        //
     }
 };
