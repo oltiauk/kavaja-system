@@ -24,7 +24,7 @@ class EncountersRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'discharged')->orderBy('discharge_date', 'desc'))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with('dischargePaper')->where('status', 'discharged')->orderBy('discharge_date', 'desc'))
             ->columns([
                 Stack::make([
                     Split::make([
@@ -106,6 +106,38 @@ class EncountersRelationManager extends RelationManager
             )
             ->headerActions([])
             ->actions([
+                Tables\Actions\Action::make('download_lab_results')
+                    ->label(__('app.labels.lab_results'))
+                    ->icon('heroicon-o-beaker')
+                    ->color('gray')
+                    ->link()
+                    ->size('sm')
+                    ->url(fn ($record) => route('encounters.lab-results', $record), true)
+                    ->visible(fn ($record) => filled($record->lab_results_file_path)),
+                Tables\Actions\Action::make('download_operative_work')
+                    ->label(__('app.labels.operative_procedure'))
+                    ->icon('heroicon-o-scissors')
+                    ->color('gray')
+                    ->link()
+                    ->size('sm')
+                    ->url(fn ($record) => route('encounters.operative-work', $record), true)
+                    ->visible(fn ($record) => filled($record->operative_work_file_path)),
+                Tables\Actions\Action::make('download_imaging')
+                    ->label(__('app.labels.imaging_rtg'))
+                    ->icon('heroicon-o-photo')
+                    ->color('gray')
+                    ->link()
+                    ->size('sm')
+                    ->url(fn ($record) => route('encounters.surgical-notes', $record), true)
+                    ->visible(fn ($record) => filled($record->surgical_notes_file_path)),
+                Tables\Actions\Action::make('download_discharge')
+                    ->label(__('app.labels.discharge_paper'))
+                    ->icon('heroicon-o-document-text')
+                    ->color('gray')
+                    ->link()
+                    ->size('sm')
+                    ->url(fn ($record) => $record->dischargePaper ? route('discharge-papers.original', $record->dischargePaper) : null, true)
+                    ->visible(fn ($record) => (bool) $record->dischargePaper),
                 Tables\Actions\Action::make('readmit')
                     ->label(__('app.actions.readmit'))
                     ->icon('heroicon-o-arrow-uturn-left')

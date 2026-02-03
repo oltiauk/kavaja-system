@@ -38,6 +38,11 @@ class EditVisit extends EditRecord
         ];
     }
 
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
+
     protected function mutateFormDataBeforeSave(array $data): array
     {
         if (($data['doctor_choice'] ?? null) !== 'other') {

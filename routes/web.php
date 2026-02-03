@@ -24,6 +24,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/discharge-papers/{dischargePaper}/original', [DocumentDownloadController::class, 'dischargeOriginal'])->name('discharge-papers.original');
     Route::get('/discharge-papers/{dischargePaper}/with-qr', [DocumentDownloadController::class, 'dischargeWithQr'])->name('discharge-papers.with-qr');
     Route::get('/encounters/{encounter}/surgical-notes', [DocumentDownloadController::class, 'surgicalNotes'])->name('encounters.surgical-notes');
+    Route::get('/encounters/{encounter}/lab-results', [DocumentDownloadController::class, 'labResults'])->name('encounters.lab-results');
+    Route::get('/encounters/{encounter}/operative-work', [DocumentDownloadController::class, 'operativeWork'])->name('encounters.operative-work');
     Route::get('/visits/{encounter}/print', [VisitPdfController::class, 'show'])->name('visits.print');
 
     // API routes for internal use

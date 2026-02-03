@@ -99,6 +99,8 @@ class HospitalizationResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Section::make(__('app.labels.patient_information'))
+                    ->collapsible()
+                    ->collapsed(fn (?Encounter $record): bool => (bool) $record)
                     ->schema([
                         Forms\Components\Select::make('patient_id')
                             ->label(__('app.labels.patient'))
@@ -126,94 +128,149 @@ class HospitalizationResource extends Resource
                             ]))
                             ->visible(fn (Get $get) => filled($get('patient_id'))),
                     ]),
-                Forms\Components\Grid::make(2)
+                Forms\Components\Section::make(__('app.labels.clinical_details'))
+                    ->collapsible()
+                    ->collapsed(fn (?Encounter $record): bool => (bool) $record)
                     ->schema([
-                        Forms\Components\Select::make('doctor_choice')
-                            ->label(__('app.labels.doctor'))
-                            ->options(fn () => static::doctorOptions())
-                            ->searchable()
-                            ->preload()
-                            ->optionsLimit(50)
-                            ->required()
-                            ->live()
-                            ->afterStateHydrated(function (?Encounter $record, $set): void {
-                                if (! $record) {
-                                    return;
-                                }
+                        Forms\Components\Grid::make(2)
+                            ->schema([
+                                Forms\Components\Select::make('doctor_choice')
+                                    ->label(__('app.labels.doctor'))
+                                    ->options(fn () => static::doctorOptions())
+                                    ->searchable()
+                                    ->preload()
+                                    ->optionsLimit(50)
+                                    ->required()
+                                    ->live()
+                                    ->afterStateHydrated(function (?Encounter $record, $set): void {
+                                        if (! $record) {
+                                            return;
+                                        }
 
-                                $options = array_keys(static::doctorOptions());
-                                if (in_array($record->doctor_name, $options, true)) {
-                                    $set('doctor_choice', $record->doctor_name);
-                                } else {
-                                    $set('doctor_choice', 'other');
-                                    $set('doctor_name', $record->doctor_name);
-                                }
-                            })
-                            ->afterStateUpdated(function (?string $state, callable $set): void {
-                                if ($state && $state !== 'other') {
-                                    $set('doctor_name', $state);
-                                }
-                            }),
-                        Forms\Components\TextInput::make('doctor_name')
-                            ->label(__('app.labels.doctor_other'))
-                            ->required(fn (Get $get) => $get('doctor_choice') === 'other')
-                            ->visible(fn (Get $get) => $get('doctor_choice') === 'other'),
+                                        $options = array_keys(static::doctorOptions());
+                                        if (in_array($record->doctor_name, $options, true)) {
+                                            $set('doctor_choice', $record->doctor_name);
+                                        } else {
+                                            $set('doctor_choice', 'other');
+                                            $set('doctor_name', $record->doctor_name);
+                                        }
+                                    })
+                                    ->afterStateUpdated(function (?string $state, callable $set): void {
+                                        if ($state && $state !== 'other') {
+                                            $set('doctor_name', $state);
+                                        }
+                                    }),
+                                Forms\Components\TextInput::make('doctor_name')
+                                    ->label(__('app.labels.doctor_other'))
+                                    ->required(fn (Get $get) => $get('doctor_choice') === 'other')
+                                    ->visible(fn (Get $get) => $get('doctor_choice') === 'other'),
+                            ]),
+                        Forms\Components\Textarea::make('main_complaint')
+                            ->label(__('app.labels.main_complaint'))
+                            ->required()
+                            ->columnSpanFull(),
+                        DiagnosisInput::make('diagnosis')
+                            ->label(__('app.labels.diagnosis'))
+                            ->required()
+                            ->columnSpanFull(),
+                        Forms\Components\Textarea::make('treatment')
+                            ->label(__('app.labels.treatment'))
+                            ->columnSpanFull(),
                     ]),
                 Forms\Components\Section::make(__('app.labels.room_selection'))
-                    ->compact()
+                    ->collapsible()
+                    ->collapsed(fn (?Encounter $record): bool => (bool) $record)
                     ->schema([
                         Forms\Components\ViewField::make('room_number')
                             ->hiddenLabel()
                             ->view('filament.forms.room-selector'),
                     ]),
-                Forms\Components\Textarea::make('main_complaint')
-                    ->label(__('app.labels.main_complaint'))
-                    ->required()
-                    ->columnSpanFull(),
-                DiagnosisInput::make('diagnosis')
-                    ->label(__('app.labels.diagnosis'))
-                    ->required()
-                    ->columnSpanFull(),
-                Forms\Components\Textarea::make('treatment')
-                    ->label(__('app.labels.treatment'))
-                    ->columnSpanFull(),
-                Forms\Components\Textarea::make('operative_procedure')
-                    ->label(__('app.labels.operative_procedure'))
-                    ->columnSpanFull(),
-                Forms\Components\FileUpload::make('surgical_notes')
-                    ->label(__('app.labels.surgical_notes_hidden'))
-                    ->helperText(__('app.helpers.surgical_notes_hidden'))
-                    ->disk('local')
-                    ->directory(fn (?Encounter $record) => $record
-                        ? "surgical-notes/{$record->patient_id}/{$record->id}"
-                        : 'tmp/surgical-notes')
-                    ->storeFileNamesIn('surgical_notes_original_filename')
-                    ->acceptedFileTypes([
-                        'application/pdf',
-                        'application/msword',
-                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                        'image/jpeg',
-                        'image/png',
-                    ])
-                    ->maxSize(20480)
-                    ->visibility('private')
+                Forms\Components\Section::make(__('app.labels.file_uploads'))
+                    ->collapsible()
+                    ->collapsed(fn (?Encounter $record): bool => (bool) $record)
                     ->visible(fn () => auth()->user()?->isAdmin() || auth()->user()?->isStaff())
-                    ->columnSpanFull(),
-                Forms\Components\Select::make('status')
-                    ->label(__('app.labels.status'))
-                    ->options([
-                        'active' => __('app.labels.active'),
-                        'discharged' => __('app.labels.discharged'),
-                    ])
-                    ->default('active')
-                    ->required(),
-                Forms\Components\DateTimePicker::make('admission_date')
-                    ->label(__('app.labels.admission_date'))
-                    ->required()
-                    ->default(now()),
-                Forms\Components\DateTimePicker::make('discharge_date')
-                    ->label(__('app.labels.discharge_date')),
+                    ->schema([
+                        Forms\Components\FileUpload::make('lab_results')
+                            ->label(__('app.labels.lab_results').' — '.__('app.labels.lab_results_upload'))
+                            ->disk('local')
+                            ->directory(fn (?Encounter $record) => $record
+                                ? "lab-results/{$record->patient_id}/{$record->id}"
+                                : 'tmp/lab-results')
+                            ->storeFileNamesIn('lab_results_original_filename')
+                            ->acceptedFileTypes([
+                                'application/pdf',
+                                'application/msword',
+                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                'image/jpeg',
+                                'image/png',
+                            ])
+                            ->maxSize(20480)
+                            ->visibility('private')
+                            ->columnSpanFull(),
+                        Forms\Components\FileUpload::make('operative_work')
+                            ->label(__('app.labels.operative_procedure').' — '.__('app.labels.operative_work_upload'))
+                            ->disk('local')
+                            ->directory(fn (?Encounter $record) => $record
+                                ? "operative-work/{$record->patient_id}/{$record->id}"
+                                : 'tmp/operative-work')
+                            ->storeFileNamesIn('operative_work_original_filename')
+                            ->acceptedFileTypes([
+                                'application/pdf',
+                                'application/msword',
+                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                'image/jpeg',
+                                'image/png',
+                            ])
+                            ->maxSize(20480)
+                            ->visibility('private')
+                            ->columnSpanFull(),
+                        Forms\Components\FileUpload::make('surgical_notes')
+                            ->label(__('app.labels.imaging_rtg').' — '.__('app.labels.imaging_rtg_upload'))
+                            ->disk('local')
+                            ->directory(fn (?Encounter $record) => $record
+                                ? "surgical-notes/{$record->patient_id}/{$record->id}"
+                                : 'tmp/surgical-notes')
+                            ->storeFileNamesIn('surgical_notes_original_filename')
+                            ->acceptedFileTypes([
+                                'application/pdf',
+                                'image/jpeg',
+                                'image/png',
+                                'video/mp4',
+                                'video/quicktime',
+                                'video/x-msvideo',
+                                'video/webm',
+                            ])
+                            ->maxSize(102400)
+                            ->visibility('private')
+                            ->columnSpanFull(),
+                    ]),
+                Forms\Components\Section::make(__('app.labels.dates_status'))
+                    ->collapsible()
+                    ->collapsed(fn (?Encounter $record): bool => (bool) $record)
+                    ->schema([
+                        Forms\Components\Select::make('status')
+                            ->label(__('app.labels.status'))
+                            ->options([
+                                'active' => __('app.labels.active'),
+                                'discharged' => __('app.labels.discharged'),
+                            ])
+                            ->default('active')
+                            ->required(),
+                        Forms\Components\DateTimePicker::make('admission_date')
+                            ->label(__('app.labels.admission_date'))
+                            ->required()
+                            ->default(now()),
+                        Forms\Components\DateTimePicker::make('discharge_date')
+                            ->label(__('app.labels.discharge_date')),
+                        Forms\Components\Toggle::make('medical_info_complete')
+                            ->label(__('app.labels.medical_info_complete'))
+                            ->visible(fn () => auth()->user()?->isAdmin() || auth()->user()?->isStaff())
+                            ->default(false)
+                            ->columnSpanFull(),
+                    ]),
                 Forms\Components\Section::make(__('app.labels.medical_information'))
+                    ->collapsible()
+                    ->collapsed(fn (?Encounter $record): bool => (bool) $record)
                     ->statePath('medical_info')
                     ->visible(fn (Get $get) => filled($get('patient_id')) && (auth()->user()?->isAdmin() || auth()->user()?->isStaff()))
                     ->schema([
@@ -270,11 +327,9 @@ class HospitalizationResource extends Resource
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
-                Forms\Components\Toggle::make('medical_info_complete')
-                    ->label(__('app.labels.medical_info_complete'))
-                    ->visible(fn () => auth()->user()?->isAdmin() || auth()->user()?->isStaff())
-                    ->default(false),
                 Forms\Components\Section::make(__('app.labels.discharge_paper'))
+                    ->collapsible()
+                    ->collapsed(fn (?Encounter $record): bool => (bool) $record)
                     ->key('discharge-paper')
                     ->visible(fn (?Encounter $record) => (bool) $record)
                     ->schema([
@@ -318,22 +373,10 @@ class HospitalizationResource extends Resource
                                 ->successNotificationTitle(__('app.notifications.discharge_paper_uploaded'))
                                 ->action(function (array $data, Encounter $record, $livewire): void {
                                     try {
-                                        // Debug logging
-                                        \Log::info('Discharge paper upload - data received', [
-                                            'file_data' => $data['file'] ?? null,
-                                            'file_data_type' => gettype($data['file'] ?? null),
-                                            'original_filename' => $data['original_filename'] ?? null,
-                                            'encounter_id' => $record->id,
-                                        ]);
-                                        
                                         static::storeDischargePaper($record, $data, false);
                                         $record->refresh();
                                         $livewire->dispatch('$refresh');
                                     } catch (\RuntimeException $e) {
-                                        \Log::error('Discharge paper upload failed', [
-                                            'error' => $e->getMessage(),
-                                            'trace' => $e->getTraceAsString(),
-                                        ]);
                                         throw ValidationException::withMessages([
                                             'file' => __('app.errors.file_processing_failed').': '.$e->getMessage(),
                                         ]);
@@ -580,45 +623,25 @@ class HospitalizationResource extends Resource
     {
         $encounter->loadMissing(['patient', 'dischargePaper']);
         $patient = $encounter->patient;
-        
+
         // Extract file path from array structure (Filament FileUpload may return array with UUID keys)
         $fileData = $data['file'];
-        
-        \Log::info('storeDischargePaper - processing file data', [
-            'file_data' => $fileData,
-            'file_data_type' => gettype($fileData),
-            'is_array' => is_array($fileData),
-            'file_data_structure' => is_array($fileData) ? [
-                'count' => count($fileData),
-                'first_element' => $fileData[0] ?? null,
-                'first_element_type' => gettype($fileData[0] ?? null),
-            ] : null,
-        ]);
-        
         if (is_array($fileData) && ! empty($fileData)) {
             // If first element is an array/object, extract the file path from it
             if (is_array($fileData[0] ?? null)) {
                 $filePath = array_values($fileData[0])[0] ?? null;
-                \Log::info('Extracted file path from nested array', ['file_path' => $filePath]);
             } else {
                 // If it's a simple array, get the first element
                 $filePath = reset($fileData);
-                \Log::info('Extracted file path from simple array', ['file_path' => $filePath]);
             }
         } else {
             $filePath = $fileData;
-            \Log::info('Using file data directly as string', ['file_path' => $filePath]);
         }
-        
+
         if (empty($filePath) || ! is_string($filePath)) {
-            \Log::error('Invalid file path extracted', [
-                'file_path' => $filePath,
-                'file_path_type' => gettype($filePath),
-                'file_data' => $fileData,
-            ]);
             throw new \RuntimeException('Invalid file data provided. Expected file path string or array with file path.');
         }
-        
+
         $extension = pathinfo($filePath, PATHINFO_EXTENSION);
         $originalFilename = $data['original_filename'] ?? basename($filePath);
         $pathBase = "discharge-papers/{$patient->id}/{$encounter->id}";

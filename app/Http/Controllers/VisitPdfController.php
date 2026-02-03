@@ -16,6 +16,12 @@ class VisitPdfController extends Controller
 
     private const LIGHT_GRAY = [200, 200, 200];
 
+    private const LEFT_MARGIN = 20;
+
+    private const RIGHT_EDGE = 190;
+
+    private const CONTENT_WIDTH = 170;
+
     public function show(Encounter $encounter): Response
     {
         $this->authorize('view', $encounter);
@@ -32,6 +38,7 @@ class VisitPdfController extends Controller
         $this->drawHeader($pdf);
         $y = $this->drawPatientInfo($pdf, $encounter, 48);
         $y = $this->drawSection($pdf, $y, __('app.labels.main_complaint'), $encounter->main_complaint);
+        $y = $this->drawSection($pdf, $y, __('app.labels.clinical_examination'), $encounter->clinical_examination);
         $y = $this->drawSection($pdf, $y, __('app.labels.diagnosis'), $encounter->diagnosis);
         $y = $this->drawSection($pdf, $y, __('app.labels.treatment'), $encounter->treatment);
         $this->drawSignature($pdf, $encounter);
@@ -63,41 +70,53 @@ class VisitPdfController extends Controller
         // Separator line
         $pdf->SetDrawColor(...self::LIGHT_GRAY);
         $pdf->SetLineWidth(0.3);
-        $pdf->Line(20, 42, 190, 42);
+        $pdf->Line(self::LEFT_MARGIN, 42, self::RIGHT_EDGE, 42);
     }
 
     private function drawPatientInfo(\FPDF $pdf, Encounter $encounter, float $y): float
     {
         $pdf->SetY($y);
 
-        // Two column layout
-        $leftX = 20;
+        $patient = $encounter->patient;
+        $leftX = self::LEFT_MARGIN;
         $rightX = 110;
+
         $lineHeight = 6;
 
-        // Row 1
-        $this->drawField($pdf, $leftX, $y, __('app.labels.patient'), $encounter->patient?->full_name ?? '—');
-        $this->drawField($pdf, $rightX, $y, __('app.labels.national_id'), $encounter->patient?->national_id ?? '—');
-        $y += $lineHeight;
+        // Collect fields — only include filled values
+        $leftFields = array_filter([
+            $patient?->full_name ? [__('app.labels.patient'), $patient->full_name] : null,
+            $patient?->date_of_birth ? [__('app.labels.year_of_birth'), $patient->date_of_birth->format('Y')] : null,
+            $patient?->residency ? [__('app.labels.residency'), $patient->residency] : null,
+            $encounter->admission_date ? [__('app.labels.date'), $encounter->admission_date->format('d.m.Y')] : null,
+        ]);
 
-        // Row 2
-        $this->drawField($pdf, $leftX, $y, __('app.labels.year_of_birth'), $encounter->patient?->date_of_birth?->format('Y') ?? '—');
-        $this->drawField($pdf, $rightX, $y, __('app.labels.insurance'), $encounter->patient?->health_insurance_number ?? '—');
-        $y += $lineHeight;
+        $rightFields = array_filter([
+            $patient?->national_id ? [__('app.labels.national_id'), $patient->national_id] : null,
+            $patient?->health_insurance_number ? [__('app.labels.insurance'), $patient->health_insurance_number] : null,
+            $encounter->doctor_name ? [__('app.labels.doctor'), $encounter->doctor_name] : null,
+        ]);
 
-        // Row 3
-        $this->drawField($pdf, $leftX, $y, __('app.labels.residency'), $encounter->patient?->residency ?? '—');
-        $this->drawField($pdf, $rightX, $y, __('app.labels.doctor'), $encounter->doctor_name ?? '—');
-        $y += $lineHeight;
+        $leftFields = array_values($leftFields);
+        $rightFields = array_values($rightFields);
+        $maxRows = max(count($leftFields), count($rightFields));
 
-        // Row 4
-        $this->drawField($pdf, $leftX, $y, __('app.labels.date'), $encounter->admission_date?->format('d.m.Y') ?? '—');
-        $y += $lineHeight + 3;
+        for ($i = 0; $i < $maxRows; $i++) {
+            if (isset($leftFields[$i])) {
+                $this->drawField($pdf, $leftX, $y, $leftFields[$i][0], $leftFields[$i][1]);
+            }
+            if (isset($rightFields[$i])) {
+                $this->drawField($pdf, $rightX, $y, $rightFields[$i][0], $rightFields[$i][1]);
+            }
+            $y += $lineHeight;
+        }
+
+        $y += 3;
 
         // Separator line
         $pdf->SetDrawColor(...self::LIGHT_GRAY);
         $pdf->SetLineWidth(0.3);
-        $pdf->Line(20, $y, 190, $y);
+        $pdf->Line(self::LEFT_MARGIN, $y, self::RIGHT_EDGE, $y);
 
         return $y + 8;
     }
@@ -126,19 +145,19 @@ class VisitPdfController extends Controller
             $y = 20;
         }
 
-        // Section title - uppercase, bold
-        $pdf->SetXY(20, $y);
+        // Section title - uppercase, bold, centered
+        $pdf->SetXY(self::LEFT_MARGIN, $y);
         $pdf->SetFont('Arial', 'B', 10);
         $pdf->SetTextColor(...self::BLACK);
-        $pdf->Cell(0, 6, $this->encode(mb_strtoupper($title)), 0, 1);
+        $pdf->Cell(self::CONTENT_WIDTH, 6, $this->encode(mb_strtoupper($title)), 0, 1, 'C');
 
         $y += 8;
 
-        // Content
-        $pdf->SetXY(20, $y);
+        // Content - centered
+        $pdf->SetXY(self::LEFT_MARGIN, $y);
         $pdf->SetFont('Arial', '', 10);
         $pdf->SetTextColor(...self::DARK_GRAY);
-        $pdf->MultiCell(170, 5, $this->encode($content));
+        $pdf->MultiCell(self::CONTENT_WIDTH, 5, $this->encode($content), 0, 'C');
 
         return $pdf->GetY() + 8;
     }
@@ -152,24 +171,25 @@ class VisitPdfController extends Controller
         $y = 260;
 
         // Signature area - right aligned
-        $signX = 130;
+        $signWidth = 60;
+        $signX = self::RIGHT_EDGE - $signWidth;
 
         // Signature line
         $pdf->SetDrawColor(...self::DARK_GRAY);
         $pdf->SetLineWidth(0.3);
-        $pdf->Line($signX, $y, 190, $y);
+        $pdf->Line($signX, $y, self::RIGHT_EDGE, $y);
 
         // Doctor name
         $pdf->SetXY($signX, $y + 2);
         $pdf->SetFont('Arial', 'B', 10);
         $pdf->SetTextColor(...self::BLACK);
-        $pdf->Cell(60, 5, $this->encode($encounter->doctor_name ?? '—'), 0, 1, 'C');
+        $pdf->Cell($signWidth, 5, $this->encode($encounter->doctor_name ?? '—'), 0, 1, 'C');
 
         // Role label
         $pdf->SetXY($signX, $y + 7);
         $pdf->SetFont('Arial', '', 9);
         $pdf->SetTextColor(...self::GRAY);
-        $pdf->Cell(60, 5, $this->encode(__('app.labels.doctor')), 0, 1, 'C');
+        $pdf->Cell($signWidth, 5, $this->encode(__('app.labels.doctor')), 0, 1, 'C');
     }
 
     private function encode(string $text): string

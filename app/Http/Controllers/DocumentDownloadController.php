@@ -72,17 +72,51 @@ class DocumentDownloadController extends Controller
     {
         $this->authorize('view', $encounter);
 
-        if (! $encounter->surgical_notes_file_path) {
+        return $this->downloadEncounterFile(
+            $encounter,
+            'surgical_notes_file_path',
+            'surgical_notes_original_filename',
+            'surgical-notes'
+        );
+    }
+
+    public function labResults(Encounter $encounter)
+    {
+        $this->authorize('view', $encounter);
+
+        return $this->downloadEncounterFile(
+            $encounter,
+            'lab_results_file_path',
+            'lab_results_original_filename',
+            'lab-results'
+        );
+    }
+
+    public function operativeWork(Encounter $encounter)
+    {
+        $this->authorize('view', $encounter);
+
+        return $this->downloadEncounterFile(
+            $encounter,
+            'operative_work_file_path',
+            'operative_work_original_filename',
+            'operative-work'
+        );
+    }
+
+    private function downloadEncounterFile(Encounter $encounter, string $pathField, string $nameField, string $fallbackName): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        if (! $encounter->$pathField) {
             abort(404);
         }
 
-        if (! Storage::disk('local')->exists($encounter->surgical_notes_file_path)) {
+        if (! Storage::disk('local')->exists($encounter->$pathField)) {
             abort(404);
         }
 
         return Storage::disk('local')->download(
-            $encounter->surgical_notes_file_path,
-            $encounter->surgical_notes_original_filename ?? 'surgical-notes.pdf'
+            $encounter->$pathField,
+            $encounter->$nameField ?? "{$fallbackName}.pdf"
         );
     }
 }
