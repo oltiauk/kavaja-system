@@ -184,16 +184,110 @@
                                     </div>
                                 @endif
 
-                                <!-- Documents for this encounter -->
-                                @if ($encounter->documents->count() > 0)
+                                <!-- Encounter files (lab results, operative work, imaging, discharge) -->
+                                @php
+                                    $encounterFiles = collect();
+                                    if ($encounter->lab_results_file_path) {
+                                        $mime = pathinfo($encounter->lab_results_file_path, PATHINFO_EXTENSION);
+                                        $encounterFiles->push([
+                                            'label' => __('app.labels.lab_results'),
+                                            'url' => route('patient.encounters.lab-results', ['token' => $token, 'encounter' => $encounter->id]),
+                                            'preview_url' => route('patient.encounters.preview', ['token' => $token, 'encounter' => $encounter->id, 'fileType' => 'lab-results']),
+                                            'filename' => $encounter->lab_results_original_filename ?? 'lab-results.pdf',
+                                            'is_image' => in_array($mime, ['jpg', 'jpeg', 'png', 'gif', 'webp']),
+                                            'is_pdf' => $mime === 'pdf',
+                                        ]);
+                                    }
+                                    if ($encounter->operative_work_file_path) {
+                                        $mime = pathinfo($encounter->operative_work_file_path, PATHINFO_EXTENSION);
+                                        $encounterFiles->push([
+                                            'label' => __('app.labels.operative_procedure'),
+                                            'url' => route('patient.encounters.operative-work', ['token' => $token, 'encounter' => $encounter->id]),
+                                            'preview_url' => route('patient.encounters.preview', ['token' => $token, 'encounter' => $encounter->id, 'fileType' => 'operative-work']),
+                                            'filename' => $encounter->operative_work_original_filename ?? 'operative-work.pdf',
+                                            'is_image' => in_array($mime, ['jpg', 'jpeg', 'png', 'gif', 'webp']),
+                                            'is_pdf' => $mime === 'pdf',
+                                        ]);
+                                    }
+                                    if ($encounter->surgical_notes_file_path) {
+                                        $mime = pathinfo($encounter->surgical_notes_file_path, PATHINFO_EXTENSION);
+                                        $encounterFiles->push([
+                                            'label' => __('app.labels.imaging_rtg'),
+                                            'url' => route('patient.encounters.surgical-notes', ['token' => $token, 'encounter' => $encounter->id]),
+                                            'preview_url' => route('patient.encounters.preview', ['token' => $token, 'encounter' => $encounter->id, 'fileType' => 'surgical-notes']),
+                                            'filename' => $encounter->surgical_notes_original_filename ?? 'imaging.pdf',
+                                            'is_image' => in_array($mime, ['jpg', 'jpeg', 'png', 'gif', 'webp']),
+                                            'is_pdf' => $mime === 'pdf',
+                                        ]);
+                                    }
+                                    if ($encounter->dischargePaper) {
+                                        $encounterFiles->push([
+                                            'label' => __('app.labels.discharge_paper'),
+                                            'url' => route('patient.encounters.discharge-paper', ['token' => $token, 'encounter' => $encounter->id]),
+                                            'preview_url' => null,
+                                            'filename' => $encounter->dischargePaper->original_filename ?? 'discharge.pdf',
+                                            'is_image' => false,
+                                            'is_pdf' => false,
+                                        ]);
+                                    }
+                                    $hasAnyFiles = $encounterFiles->isNotEmpty() || $encounter->documents->count() > 0;
+                                @endphp
+
+                                @if ($hasAnyFiles)
                                     <div class="pt-3 border-t border-slate-50">
                                         <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">{{ __('app.labels.documents') }}</p>
                                         <div class="space-y-1">
+                                            {{-- Encounter-level files --}}
+                                            @foreach ($encounterFiles as $file)
+                                                <div class="group flex items-center gap-2 p-2 -mx-2 rounded-lg hover:bg-slate-50 transition-colors">
+                                                    <div class="flex-1 min-w-0">
+                                                        <p class="text-sm font-medium text-slate-700">{{ $file['label'] }}</p>
+                                                        <p class="text-xs text-slate-400 truncate">{{ $file['filename'] }}</p>
+                                                    </div>
+                                                    <div class="flex items-center gap-1 shrink-0">
+                                                        @if ($file['is_image'] && $file['preview_url'])
+                                                            <button
+                                                                type="button"
+                                                                @click="imageModal = { open: true, src: '{{ $file['preview_url'] }}', name: '{{ $file['label'] }}' }"
+                                                                class="p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-primary-600 transition-colors"
+                                                                title="{{ __('app.actions.preview') }}"
+                                                            >
+                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                                </svg>
+                                                            </button>
+                                                        @elseif ($file['is_pdf'] && $file['preview_url'])
+                                                            <a
+                                                                href="{{ $file['preview_url'] }}"
+                                                                target="_blank"
+                                                                class="p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-primary-600 transition-colors"
+                                                                title="{{ __('app.actions.preview') }}"
+                                                            >
+                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                                </svg>
+                                                            </a>
+                                                        @endif
+                                                        <a
+                                                            href="{{ $file['url'] }}"
+                                                            class="p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-primary-600 transition-colors"
+                                                            title="{{ __('app.actions.download') }}"
+                                                        >
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                                            </svg>
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+
+                                            {{-- Regular documents --}}
                                             @foreach ($encounter->documents as $document)
                                                 @php
                                                     $isImage = str_starts_with($document->mime_type, 'image/');
                                                     $isPdf = $document->mime_type === 'application/pdf';
-                                                    $isPreviewable = $isImage || $isPdf;
                                                 @endphp
                                                 <div class="group flex items-center gap-2 p-2 -mx-2 rounded-lg hover:bg-slate-50 transition-colors">
                                                     <div class="flex-1 min-w-0">
@@ -206,7 +300,6 @@
                                                     </div>
                                                     <div class="flex items-center gap-1 shrink-0">
                                                         @if ($isImage)
-                                                            {{-- Image preview button - opens modal --}}
                                                             <button
                                                                 type="button"
                                                                 @click="imageModal = { open: true, src: '{{ route('patient.documents.preview', ['token' => $token, 'document' => $document->id]) }}', name: '{{ $document->original_filename }}' }"
@@ -219,7 +312,6 @@
                                                                 </svg>
                                                             </button>
                                                         @elseif ($isPdf)
-                                                            {{-- PDF preview button - opens in new tab --}}
                                                             <a
                                                                 href="{{ route('patient.documents.preview', ['token' => $token, 'document' => $document->id]) }}"
                                                                 target="_blank"
@@ -232,7 +324,6 @@
                                                                 </svg>
                                                             </a>
                                                         @endif
-                                                        {{-- Download button --}}
                                                         <a
                                                             href="{{ route('patient.documents.download', ['token' => $token, 'document' => $document->id]) }}"
                                                             class="p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-primary-600 transition-colors"

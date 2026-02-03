@@ -16,6 +16,11 @@ Route::prefix('patient/{token}')->group(function () {
     Route::get('/records', [PatientPortalController::class, 'records'])->name('patient.records');
     Route::get('/documents/{document}', [PatientPortalController::class, 'downloadDocument'])->name('patient.documents.download');
     Route::get('/documents/{document}/preview', [PatientPortalController::class, 'previewDocument'])->name('patient.documents.preview');
+    Route::get('/encounters/{encounter}/lab-results', [PatientPortalController::class, 'downloadLabResults'])->name('patient.encounters.lab-results');
+    Route::get('/encounters/{encounter}/operative-work', [PatientPortalController::class, 'downloadOperativeWork'])->name('patient.encounters.operative-work');
+    Route::get('/encounters/{encounter}/surgical-notes', [PatientPortalController::class, 'downloadSurgicalNotes'])->name('patient.encounters.surgical-notes');
+    Route::get('/encounters/{encounter}/discharge-paper', [PatientPortalController::class, 'downloadDischargePaper'])->name('patient.encounters.discharge-paper');
+    Route::get('/encounters/{encounter}/{fileType}/preview', [PatientPortalController::class, 'previewEncounterFile'])->name('patient.encounters.preview');
 });
 
 Route::middleware(['auth'])->group(function () {

@@ -18,9 +18,22 @@ class EditHospitalization extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('downloadLabResults')
+                ->label(__('app.labels.lab_results'))
+                ->icon('heroicon-o-beaker')
+                ->color('gray')
+                ->visible(fn () => (bool) $this->record->lab_results_file_path)
+                ->url(fn () => route('encounters.lab-results', $this->record), true),
+            Actions\Action::make('downloadOperativeWork')
+                ->label(__('app.labels.operative_procedure'))
+                ->icon('heroicon-o-scissors')
+                ->color('gray')
+                ->visible(fn () => (bool) $this->record->operative_work_file_path)
+                ->url(fn () => route('encounters.operative-work', $this->record), true),
             Actions\Action::make('downloadSurgicalNotes')
-                ->label(__('app.actions.download_surgical_notes'))
-                ->icon('heroicon-o-arrow-down-tray')
+                ->label(__('app.labels.imaging_rtg'))
+                ->icon('heroicon-o-photo')
+                ->color('gray')
                 ->visible(fn () => (bool) $this->record->surgical_notes_file_path)
                 ->url(fn () => route('encounters.surgical-notes', $this->record), true),
             Actions\Action::make('dischargePatient')
@@ -64,9 +77,15 @@ class EditHospitalization extends EditRecord
             ];
         }
 
-        // Load surgical notes file path for FileUpload component
+        // Load file paths for FileUpload components
         if ($this->record->surgical_notes_file_path) {
             $data['surgical_notes'] = $this->record->surgical_notes_file_path;
+        }
+        if ($this->record->lab_results_file_path) {
+            $data['lab_results'] = $this->record->lab_results_file_path;
+        }
+        if ($this->record->operative_work_file_path) {
+            $data['operative_work'] = $this->record->operative_work_file_path;
         }
 
         return $data;
@@ -83,40 +102,10 @@ class EditHospitalization extends EditRecord
 
         unset($data['doctor_choice']);
 
-        // Handle surgical notes file upload
-        if (isset($data['surgical_notes'])) {
-            if (filled($data['surgical_notes'])) {
-                $filePath = $data['surgical_notes'];
-
-                // If file is in tmp directory, move it to final location
-                if (str_starts_with($filePath, 'tmp/surgical-notes')) {
-                    $finalPath = "surgical-notes/{$this->record->patient_id}/{$this->record->id}/".basename($filePath);
-                    Storage::disk('local')->move($filePath, $finalPath);
-                    $filePath = $finalPath;
-                }
-
-                // Delete old file if it exists and is different
-                if ($this->record->surgical_notes_file_path
-                    && $this->record->surgical_notes_file_path !== $filePath
-                    && Storage::disk('local')->exists($this->record->surgical_notes_file_path)) {
-                    Storage::disk('local')->delete($this->record->surgical_notes_file_path);
-                }
-
-                $data['surgical_notes_file_path'] = $filePath;
-                $data['surgical_notes_mime_type'] = Storage::disk('local')->mimeType($filePath);
-                $data['surgical_notes_file_size'] = Storage::disk('local')->size($filePath);
-            } else {
-                // If file is removed, delete old file and clear metadata
-                if ($this->record->surgical_notes_file_path && Storage::disk('local')->exists($this->record->surgical_notes_file_path)) {
-                    Storage::disk('local')->delete($this->record->surgical_notes_file_path);
-                }
-                $data['surgical_notes_file_path'] = null;
-                $data['surgical_notes_original_filename'] = null;
-                $data['surgical_notes_mime_type'] = null;
-                $data['surgical_notes_file_size'] = null;
-            }
-        }
-        unset($data['surgical_notes']);
+        // Handle file uploads (lab results, operative work, surgical notes)
+        $data = $this->handleFileUpload($data, 'lab_results', 'lab-results');
+        $data = $this->handleFileUpload($data, 'operative_work', 'operative-work');
+        $data = $this->handleFileUpload($data, 'surgical_notes', 'surgical-notes');
 
         $data['type'] = 'hospitalization';
         $data['updated_by'] = Auth::id();
@@ -127,6 +116,47 @@ class EditHospitalization extends EditRecord
     protected function afterSave(): void
     {
         $this->persistMedicalInfo($this->record->patient_id, $this->medicalInfo);
+    }
+
+    private function handleFileUpload(array $data, string $field, string $directory): array
+    {
+        $pathField = "{$field}_file_path";
+        $nameField = "{$field}_original_filename";
+        $mimeField = "{$field}_mime_type";
+        $sizeField = "{$field}_file_size";
+
+        if (isset($data[$field])) {
+            if (filled($data[$field])) {
+                $filePath = $data[$field];
+
+                if (str_starts_with($filePath, "tmp/{$directory}")) {
+                    $finalPath = "{$directory}/{$this->record->patient_id}/{$this->record->id}/".basename($filePath);
+                    Storage::disk('local')->move($filePath, $finalPath);
+                    $filePath = $finalPath;
+                }
+
+                if ($this->record->$pathField
+                    && $filePath !== $this->record->$pathField
+                    && Storage::disk('local')->exists($this->record->$pathField)) {
+                    Storage::disk('local')->delete($this->record->$pathField);
+                }
+
+                $data[$pathField] = $filePath;
+                $data[$mimeField] = Storage::disk('local')->mimeType($filePath);
+                $data[$sizeField] = Storage::disk('local')->size($filePath);
+            } else {
+                if ($this->record->$pathField && Storage::disk('local')->exists($this->record->$pathField)) {
+                    Storage::disk('local')->delete($this->record->$pathField);
+                }
+                $data[$pathField] = null;
+                $data[$nameField] = null;
+                $data[$mimeField] = null;
+                $data[$sizeField] = null;
+            }
+        }
+        unset($data[$field]);
+
+        return $data;
     }
 
     private function persistMedicalInfo(int $patientId, array $medicalInfo): void
