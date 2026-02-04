@@ -168,13 +168,16 @@ class HospitalizationResource extends Resource
                         Forms\Components\Textarea::make('main_complaint')
                             ->label(__('app.labels.main_complaint'))
                             ->required()
+                            ->live(onBlur: true)
                             ->columnSpanFull(),
                         DiagnosisInput::make('diagnosis')
                             ->label(__('app.labels.diagnosis'))
                             ->required()
+                            ->live(onBlur: true)
                             ->columnSpanFull(),
                         Forms\Components\Textarea::make('treatment')
                             ->label(__('app.labels.treatment'))
+                            ->live(onBlur: true)
                             ->columnSpanFull(),
                     ]),
                 Forms\Components\Section::make(__('app.labels.room_selection'))
@@ -206,6 +209,10 @@ class HospitalizationResource extends Resource
                             ])
                             ->maxSize(20480)
                             ->visibility('private')
+                            ->openable()
+                            ->downloadable()
+                            ->previewable()
+                            ->live()
                             ->columnSpanFull(),
                         Forms\Components\FileUpload::make('operative_work')
                             ->label(__('app.labels.operative_procedure').' — '.__('app.labels.operative_work_upload'))
@@ -223,6 +230,10 @@ class HospitalizationResource extends Resource
                             ])
                             ->maxSize(20480)
                             ->visibility('private')
+                            ->openable()
+                            ->downloadable()
+                            ->previewable()
+                            ->live()
                             ->columnSpanFull(),
                         Forms\Components\FileUpload::make('surgical_notes')
                             ->label(__('app.labels.imaging_rtg').' — '.__('app.labels.imaging_rtg_upload'))
@@ -242,6 +253,10 @@ class HospitalizationResource extends Resource
                             ])
                             ->maxSize(102400)
                             ->visibility('private')
+                            ->openable()
+                            ->downloadable()
+                            ->previewable()
+                            ->live()
                             ->columnSpanFull(),
                     ]),
                 Forms\Components\Section::make(__('app.labels.dates_status'))
@@ -255,17 +270,21 @@ class HospitalizationResource extends Resource
                                 'discharged' => __('app.labels.discharged'),
                             ])
                             ->default('active')
-                            ->required(),
+                            ->required()
+                            ->live(),
                         Forms\Components\DateTimePicker::make('admission_date')
                             ->label(__('app.labels.admission_date'))
                             ->required()
-                            ->default(now()),
+                            ->default(now())
+                            ->live(onBlur: true),
                         Forms\Components\DateTimePicker::make('discharge_date')
-                            ->label(__('app.labels.discharge_date')),
+                            ->label(__('app.labels.discharge_date'))
+                            ->live(onBlur: true),
                         Forms\Components\Toggle::make('medical_info_complete')
                             ->label(__('app.labels.medical_info_complete'))
                             ->visible(fn () => auth()->user()?->isAdmin() || auth()->user()?->isStaff())
                             ->default(false)
+                            ->live()
                             ->columnSpanFull(),
                     ]),
                 Forms\Components\Section::make(__('app.labels.medical_information'))
@@ -286,13 +305,16 @@ class HospitalizationResource extends Resource
                                 'O+' => 'O+',
                                 'O-' => 'O-',
                                 'unknown' => __('app.labels.unknown'),
-                            ]),
+                            ])
+                            ->live(),
                         Forms\Components\TextInput::make('height_cm')
                             ->label(__('app.labels.height_cm'))
-                            ->numeric(),
+                            ->numeric()
+                            ->live(onBlur: true),
                         Forms\Components\TextInput::make('weight_kg')
                             ->label(__('app.labels.weight_kg'))
-                            ->numeric(),
+                            ->numeric()
+                            ->live(onBlur: true),
                         Forms\Components\Toggle::make('has_allergies')
                             ->label(__('app.labels.has_allergies'))
                             ->live()
@@ -303,6 +325,7 @@ class HospitalizationResource extends Resource
                             ->label(__('app.labels.allergies'))
                             ->visible(fn (Get $get) => $get('has_allergies'))
                             ->required(fn (Get $get) => $get('has_allergies'))
+                            ->live(onBlur: true)
                             ->columnSpanFull(),
                         Forms\Components\Select::make('smoking_status')
                             ->label(__('app.labels.smoking'))
@@ -310,20 +333,26 @@ class HospitalizationResource extends Resource
                                 'smoker' => __('app.smoking_status.smoker'),
                                 'non_smoker' => __('app.smoking_status.non_smoker'),
                                 'former_smoker' => __('app.smoking_status.former_smoker'),
-                            ]),
+                            ])
+                            ->live(),
                         Forms\Components\TextInput::make('alcohol_use')
-                            ->label(__('app.labels.alcohol')),
+                            ->label(__('app.labels.alcohol'))
+                            ->live(onBlur: true),
                         Forms\Components\Textarea::make('drug_use_history')
                             ->label(__('app.labels.drug_history'))
+                            ->live(onBlur: true)
                             ->columnSpanFull(),
                         Forms\Components\Textarea::make('pacemaker_implants')
                             ->label(__('app.labels.pacemaker_implants'))
+                            ->live(onBlur: true)
                             ->columnSpanFull(),
                         Forms\Components\Textarea::make('anesthesia_reactions')
                             ->label(__('app.labels.anesthesia_reactions'))
+                            ->live(onBlur: true)
                             ->columnSpanFull(),
                         Forms\Components\Textarea::make('current_medications')
                             ->label(__('app.labels.current_medications'))
+                            ->live(onBlur: true)
                             ->columnSpanFull(),
                     ])
                     ->columns(2),

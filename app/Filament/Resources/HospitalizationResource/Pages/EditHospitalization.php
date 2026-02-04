@@ -5,15 +5,59 @@ namespace App\Filament\Resources\HospitalizationResource\Pages;
 use App\Filament\Resources\HospitalizationResource;
 use App\Models\PatientMedicalInfo;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class EditHospitalization extends EditRecord
 {
     protected static string $resource = HospitalizationResource::class;
 
     protected array $medicalInfo = [];
+
+    protected bool $isAutoSaving = false;
+
+    public function updated($property): void
+    {
+        // Only auto-save for form data changes, not actions
+        if (! str($property)->startsWith('data.')) {
+            return;
+        }
+
+        $this->autoSave();
+    }
+
+    protected function autoSave(): void
+    {
+        $this->isAutoSaving = true;
+
+        try {
+            $this->save();
+        } catch (ValidationException) {
+            // Form incomplete — user will save manually when ready
+            $this->resetErrorBag();
+        } catch (\Exception) {
+            // Silent fail
+        } finally {
+            $this->isAutoSaving = false;
+        }
+    }
+
+    protected function getSavedNotification(): ?Notification
+    {
+        if ($this->isAutoSaving) {
+            return null;
+        }
+
+        return parent::getSavedNotification();
+    }
+
+    protected function getRedirectUrl(): ?string
+    {
+        return null;
+    }
 
     protected function getHeaderActions(): array
     {
