@@ -11,8 +11,6 @@ use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables;
-use Filament\Tables\Columns\Layout\Split;
-use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -99,54 +97,28 @@ class ArchivedHospitalizationResource extends Resource
     {
         return $table
             ->columns([
-                Stack::make([
-                    Split::make([
-                        Tables\Columns\TextColumn::make('full_name')
-                            ->label(__('app.labels.patient'))
-                            ->weight(FontWeight::Bold)
-                            ->size(Tables\Columns\TextColumn\TextColumnSize::Large)
-                            ->searchable(['first_name', 'last_name'])
-                            ->sortable(query: fn (Builder $query, string $direction) => $query
-                                ->orderBy('last_name', $direction)
-                                ->orderBy('first_name', $direction)),
-                        Tables\Columns\TextColumn::make('discharged_encounters_count')
-                            ->label(__('app.labels.encounters'))
-                            ->badge()
-                            ->color('gray')
-                            ->formatStateUsing(fn (int $state) => trans_choice('app.labels.encounter_count', $state, ['count' => $state]))
-                            ->grow(false),
-                    ]),
-                    Split::make([
-                        Tables\Columns\TextColumn::make('date_of_birth')
-                            ->label(__('app.labels.date_of_birth'))
-                            ->icon('heroicon-m-cake')
-                            ->date('d M Y')
-                            ->color('gray'),
-                        Tables\Columns\TextColumn::make('age')
-                            ->label(__('app.labels.age'))
-                            ->formatStateUsing(fn (int $state) => trans_choice('app.labels.years_old', $state, ['age' => $state]))
-                            ->color('gray'),
-                    ]),
-                    Split::make([
-                        Tables\Columns\TextColumn::make('phone_number')
-                            ->label(__('app.labels.phone'))
-                            ->icon('heroicon-m-phone')
-                            ->color('gray')
-                            ->placeholder('—'),
-                    ]),
-                    Split::make([
-                        Tables\Columns\TextColumn::make('last_discharge_date')
-                            ->label(__('app.labels.last_discharge'))
-                            ->icon('heroicon-m-arrow-right-on-rectangle')
-                            ->dateTime('d M Y, H:i')
-                            ->color('gray')
-                            ->sortable(),
-                    ]),
-                ])->space(2),
-            ])
-            ->contentGrid([
-                'md' => 2,
-                'xl' => 3,
+                Tables\Columns\TextColumn::make('full_name')
+                    ->label(__('app.labels.patient'))
+                    ->weight(FontWeight::Bold)
+                    ->searchable(['first_name', 'last_name'])
+                    ->sortable(query: fn (Builder $query, string $direction) => $query
+                        ->orderBy('last_name', $direction)
+                        ->orderBy('first_name', $direction)),
+                Tables\Columns\TextColumn::make('date_of_birth')
+                    ->label(__('app.labels.date_of_birth'))
+                    ->date('d M Y'),
+                Tables\Columns\TextColumn::make('phone_number')
+                    ->label(__('app.labels.phone'))
+                    ->placeholder('—'),
+                Tables\Columns\TextColumn::make('discharged_encounters_count')
+                    ->label(__('app.labels.encounters'))
+                    ->badge()
+                    ->color('gray')
+                    ->formatStateUsing(fn (int $state) => trans_choice('app.labels.encounter_count', $state, ['count' => $state])),
+                Tables\Columns\TextColumn::make('last_discharge_date')
+                    ->label(__('app.labels.last_discharge'))
+                    ->dateTime('d M Y, H:i')
+                    ->sortable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('gender')

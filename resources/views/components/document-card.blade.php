@@ -11,7 +11,9 @@
         'application/msword',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ], true);
-    $previewUrl = $isImage ? route('documents.preview', $document) : null;
+    $previewUrl = ($isImage || $isPdf) ? route('documents.preview', $document) : null;
+    $canPreview = $isImage || $isPdf;
+    $clickUrl = $canPreview ? route('documents.preview', $document) : route('documents.download', $document);
     $fileExtension = strtoupper(pathinfo($document->original_filename, PATHINFO_EXTENSION) ?: '?');
 
     // Document type configuration
@@ -62,7 +64,7 @@
 <div class="group relative flex w-full flex-col overflow-hidden rounded border border-gray-200 bg-white transition-all duration-200 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800" style="aspect-ratio: 4 / 3;">
     {{-- Preview Area (top portion) - fills most of card --}}
     <div class="relative flex-1 overflow-hidden bg-gray-50 dark:bg-gray-900">
-        <a href="{{ route('documents.download', $document) }}" class="block h-full w-full">
+        <a href="{{ $clickUrl }}" {{ $canPreview ? 'target="_blank"' : '' }} class="block h-full w-full">
             @if ($isImage)
                 {{-- Image preview --}}
                 <img
@@ -112,6 +114,17 @@
                 class="absolute right-0 top-9 z-10 w-48 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
                 style="display: none;"
             >
+                @if($canPreview)
+                    <a
+                        href="{{ route('documents.preview', $document) }}"
+                        target="_blank"
+                        class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                        @click.stop
+                    >
+                        <x-filament::icon icon="heroicon-o-eye" class="h-4 w-4" />
+                        {{ __('app.actions.preview') }}
+                    </a>
+                @endif
                 <a
                     href="{{ route('documents.download', $document) }}"
                     class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
@@ -138,7 +151,7 @@
 
     {{-- Filename Bar (bottom) - Google Drive style --}}
     <div class="flex items-center gap-2 border-t border-gray-100 bg-white px-3 py-2.5 dark:border-gray-700 dark:bg-gray-800">
-        <a href="{{ route('documents.download', $document) }}" class="flex-1 min-w-0">
+        <a href="{{ $clickUrl }}" {{ $canPreview ? 'target="_blank"' : '' }} class="flex-1 min-w-0">
             <p class="truncate text-xs font-medium leading-tight text-gray-900 dark:text-gray-100" title="{{ $document->original_filename }}">
                 {{ $document->original_filename }}
             </p>

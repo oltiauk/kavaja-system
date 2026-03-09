@@ -23,6 +23,7 @@ class DischargePaper extends Model
         'qr_token',
         'mime_type',
         'uploaded_by',
+        'preview_file_path',
     ];
 
     public function encounter(): BelongsTo

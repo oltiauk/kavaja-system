@@ -12,6 +12,7 @@ use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
 
 class DocumentsRelationManager extends RelationManager
 {
@@ -54,7 +55,14 @@ class DocumentsRelationManager extends RelationManager
 
     public function table(Table $table): Table
     {
+        $encounter = $this->getOwnerRecord();
+
         return $table
+            ->heading(new HtmlString(
+                view('filament.tables.encounter-files-header', [
+                    'encounter' => $encounter,
+                ])->render()
+            ))
             ->modifyQueryUsing(fn ($query) => $query->with('uploadedBy'))
             ->columns([
                 Grid::make()
@@ -71,9 +79,18 @@ class DocumentsRelationManager extends RelationManager
             ])
             ->defaultSort('created_at', 'desc')
             ->headerActions([
+                Tables\Actions\Action::make('toggleView')
+                    ->label('')
+                    ->icon('heroicon-o-squares-2x2')
+                    ->color('gray')
+                    ->extraAttributes([
+                        'x-data' => '{}',
+                        'x-on:click.prevent' => '$store.docView.toggle()',
+                    ])
+                    ->tooltip(__('app.labels.documents')),
                 Tables\Actions\CreateAction::make()
                     ->label(__('app.actions.upload_document'))
-                    ->visible(fn () => auth()->user()?->isAdmin() || auth()->user()?->isStaff())
+                    ->visible(fn () => auth()->user()?->isAdmin() || auth()->user()?->isAdministration() || auth()->user()?->isStaff())
                     ->mutateFormDataUsing(function (array $data): array {
                         $encounter = $this->getOwnerRecord();
                         $data['encounter_id'] = $encounter->id;

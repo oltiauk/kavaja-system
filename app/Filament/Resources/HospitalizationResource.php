@@ -66,24 +66,28 @@ class HospitalizationResource extends Resource
     {
         $user = auth()->user();
 
-        return $user?->isAdmin() || $user?->isAdministration();
+        return $user?->isAdmin() || $user?->isAdministration() || $user?->isStaff();
     }
 
     public static function canEdit($record): bool
     {
         $user = auth()->user();
 
-        return $user?->isAdmin() || $user?->isStaff();
+        return $user?->isAdmin() || $user?->isAdministration() || $user?->isStaff();
     }
 
     public static function canDelete($record): bool
     {
-        return auth()->user()?->isAdmin() ?? false;
+        $user = auth()->user();
+
+        return $user?->isAdmin() || $user?->isAdministration() || $user?->isStaff();
     }
 
     public static function canDeleteAny(): bool
     {
-        return auth()->user()?->isAdmin() ?? false;
+        $user = auth()->user();
+
+        return $user?->isAdmin() || $user?->isAdministration() || $user?->isStaff();
     }
 
     public static function getEloquentQuery(): Builder
@@ -188,10 +192,107 @@ class HospitalizationResource extends Resource
                             ->hiddenLabel()
                             ->view('filament.forms.room-selector'),
                     ]),
+                Forms\Components\Section::make(__('app.labels.medical_information'))
+                    ->collapsible()
+                    ->collapsed(fn (?Encounter $record): bool => (bool) $record)
+                    ->statePath('medical_info')
+                    ->visible(fn (Get $get) => filled($get('patient_id')) && (auth()->user()?->isAdmin() || auth()->user()?->isAdministration() || auth()->user()?->isStaff()))
+                    ->schema([
+                        Forms\Components\Select::make('blood_type')
+                            ->label(__('app.labels.blood_type'))
+                            ->options([
+                                'A+' => 'A+',
+                                'A-' => 'A-',
+                                'B+' => 'B+',
+                                'B-' => 'B-',
+                                'AB+' => 'AB+',
+                                'AB-' => 'AB-',
+                                'O+' => 'O+',
+                                'O-' => 'O-',
+                                'unknown' => __('app.labels.unknown'),
+                            ])
+                            ->live(),
+                        Forms\Components\TextInput::make('height_cm')
+                            ->label(__('app.labels.height_cm'))
+                            ->numeric()
+                            ->live(onBlur: true),
+                        Forms\Components\TextInput::make('weight_kg')
+                            ->label(__('app.labels.weight_kg'))
+                            ->numeric()
+                            ->live(onBlur: true),
+                        Forms\Components\Toggle::make('has_allergies')
+                            ->label(__('app.labels.has_allergies'))
+                            ->live()
+                            ->inline(false)
+                            ->default(false)
+                            ->columnSpanFull(),
+                        Forms\Components\Textarea::make('allergies')
+                            ->label(__('app.labels.allergies'))
+                            ->visible(fn (Get $get) => $get('has_allergies'))
+                            ->required(fn (Get $get) => $get('has_allergies'))
+                            ->live(onBlur: true)
+                            ->columnSpanFull(),
+                        Forms\Components\Select::make('smoking_status')
+                            ->label(__('app.labels.smoking'))
+                            ->options([
+                                'smoker' => __('app.smoking_status.smoker'),
+                                'non_smoker' => __('app.smoking_status.non_smoker'),
+                                'former_smoker' => __('app.smoking_status.former_smoker'),
+                            ])
+                            ->live(),
+                        Forms\Components\TextInput::make('alcohol_use')
+                            ->label(__('app.labels.alcohol'))
+                            ->live(onBlur: true),
+                        Forms\Components\Textarea::make('drug_use_history')
+                            ->label(__('app.labels.drug_history'))
+                            ->live(onBlur: true)
+                            ->columnSpanFull(),
+                        Forms\Components\Textarea::make('pacemaker_implants')
+                            ->label(__('app.labels.pacemaker_implants'))
+                            ->live(onBlur: true)
+                            ->columnSpanFull(),
+                        Forms\Components\Textarea::make('anesthesia_reactions')
+                            ->label(__('app.labels.anesthesia_reactions'))
+                            ->live(onBlur: true)
+                            ->columnSpanFull(),
+                        Forms\Components\Textarea::make('current_medications')
+                            ->label(__('app.labels.current_medications'))
+                            ->live(onBlur: true)
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2),
+                Forms\Components\Section::make(__('app.labels.dates_status'))
+                    ->collapsible()
+                    ->collapsed(fn (?Encounter $record): bool => (bool) $record)
+                    ->schema([
+                        Forms\Components\Select::make('status')
+                            ->label(__('app.labels.status'))
+                            ->options([
+                                'active' => __('app.labels.active'),
+                                'discharged' => __('app.labels.discharged'),
+                            ])
+                            ->default('active')
+                            ->required()
+                            ->live(),
+                        Forms\Components\DateTimePicker::make('admission_date')
+                            ->label(__('app.labels.admission_date'))
+                            ->required()
+                            ->default(now())
+                            ->live(onBlur: true),
+                        Forms\Components\DateTimePicker::make('discharge_date')
+                            ->label(__('app.labels.discharge_date'))
+                            ->live(onBlur: true),
+                        Forms\Components\Toggle::make('medical_info_complete')
+                            ->label(__('app.labels.medical_info_complete'))
+                            ->visible(fn () => auth()->user()?->isAdmin() || auth()->user()?->isAdministration() || auth()->user()?->isStaff())
+                            ->default(false)
+                            ->live()
+                            ->columnSpanFull(),
+                    ]),
                 Forms\Components\Section::make(__('app.labels.file_uploads'))
                     ->collapsible()
                     ->collapsed(fn (?Encounter $record): bool => (bool) $record)
-                    ->visible(fn () => auth()->user()?->isAdmin() || auth()->user()?->isStaff())
+                    ->visible(fn () => auth()->user()?->isAdmin() || auth()->user()?->isAdministration() || auth()->user()?->isStaff())
                     ->schema([
                         Forms\Components\FileUpload::make('lab_results')
                             ->label(__('app.labels.lab_results').' — '.__('app.labels.lab_results_upload'))
@@ -259,103 +360,6 @@ class HospitalizationResource extends Resource
                             ->live()
                             ->columnSpanFull(),
                     ]),
-                Forms\Components\Section::make(__('app.labels.dates_status'))
-                    ->collapsible()
-                    ->collapsed(fn (?Encounter $record): bool => (bool) $record)
-                    ->schema([
-                        Forms\Components\Select::make('status')
-                            ->label(__('app.labels.status'))
-                            ->options([
-                                'active' => __('app.labels.active'),
-                                'discharged' => __('app.labels.discharged'),
-                            ])
-                            ->default('active')
-                            ->required()
-                            ->live(),
-                        Forms\Components\DateTimePicker::make('admission_date')
-                            ->label(__('app.labels.admission_date'))
-                            ->required()
-                            ->default(now())
-                            ->live(onBlur: true),
-                        Forms\Components\DateTimePicker::make('discharge_date')
-                            ->label(__('app.labels.discharge_date'))
-                            ->live(onBlur: true),
-                        Forms\Components\Toggle::make('medical_info_complete')
-                            ->label(__('app.labels.medical_info_complete'))
-                            ->visible(fn () => auth()->user()?->isAdmin() || auth()->user()?->isStaff())
-                            ->default(false)
-                            ->live()
-                            ->columnSpanFull(),
-                    ]),
-                Forms\Components\Section::make(__('app.labels.medical_information'))
-                    ->collapsible()
-                    ->collapsed(fn (?Encounter $record): bool => (bool) $record)
-                    ->statePath('medical_info')
-                    ->visible(fn (Get $get) => filled($get('patient_id')) && (auth()->user()?->isAdmin() || auth()->user()?->isStaff()))
-                    ->schema([
-                        Forms\Components\Select::make('blood_type')
-                            ->label(__('app.labels.blood_type'))
-                            ->options([
-                                'A+' => 'A+',
-                                'A-' => 'A-',
-                                'B+' => 'B+',
-                                'B-' => 'B-',
-                                'AB+' => 'AB+',
-                                'AB-' => 'AB-',
-                                'O+' => 'O+',
-                                'O-' => 'O-',
-                                'unknown' => __('app.labels.unknown'),
-                            ])
-                            ->live(),
-                        Forms\Components\TextInput::make('height_cm')
-                            ->label(__('app.labels.height_cm'))
-                            ->numeric()
-                            ->live(onBlur: true),
-                        Forms\Components\TextInput::make('weight_kg')
-                            ->label(__('app.labels.weight_kg'))
-                            ->numeric()
-                            ->live(onBlur: true),
-                        Forms\Components\Toggle::make('has_allergies')
-                            ->label(__('app.labels.has_allergies'))
-                            ->live()
-                            ->inline(false)
-                            ->default(false)
-                            ->columnSpanFull(),
-                        Forms\Components\Textarea::make('allergies')
-                            ->label(__('app.labels.allergies'))
-                            ->visible(fn (Get $get) => $get('has_allergies'))
-                            ->required(fn (Get $get) => $get('has_allergies'))
-                            ->live(onBlur: true)
-                            ->columnSpanFull(),
-                        Forms\Components\Select::make('smoking_status')
-                            ->label(__('app.labels.smoking'))
-                            ->options([
-                                'smoker' => __('app.smoking_status.smoker'),
-                                'non_smoker' => __('app.smoking_status.non_smoker'),
-                                'former_smoker' => __('app.smoking_status.former_smoker'),
-                            ])
-                            ->live(),
-                        Forms\Components\TextInput::make('alcohol_use')
-                            ->label(__('app.labels.alcohol'))
-                            ->live(onBlur: true),
-                        Forms\Components\Textarea::make('drug_use_history')
-                            ->label(__('app.labels.drug_history'))
-                            ->live(onBlur: true)
-                            ->columnSpanFull(),
-                        Forms\Components\Textarea::make('pacemaker_implants')
-                            ->label(__('app.labels.pacemaker_implants'))
-                            ->live(onBlur: true)
-                            ->columnSpanFull(),
-                        Forms\Components\Textarea::make('anesthesia_reactions')
-                            ->label(__('app.labels.anesthesia_reactions'))
-                            ->live(onBlur: true)
-                            ->columnSpanFull(),
-                        Forms\Components\Textarea::make('current_medications')
-                            ->label(__('app.labels.current_medications'))
-                            ->live(onBlur: true)
-                            ->columnSpanFull(),
-                    ])
-                    ->columns(2),
                 Forms\Components\Section::make(__('app.labels.discharge_paper'))
                     ->collapsible()
                     ->collapsed(fn (?Encounter $record): bool => (bool) $record)
@@ -367,7 +371,9 @@ class HospitalizationResource extends Resource
                             ->content(fn (?Encounter $record) => $record?->dischargePaper ? __('app.labels.uploaded_status') : __('app.labels.not_uploaded')),
                         Forms\Components\Placeholder::make('discharge_filename')
                             ->label(__('app.labels.file'))
-                            ->content(fn (?Encounter $record) => $record?->dischargePaper?->original_filename ?? '—'),
+                            ->content(fn (?Encounter $record) => $record?->dischargePaper?->original_filename
+                                ? Str::limit($record->dischargePaper->original_filename, 40)
+                                : '—'),
                         Forms\Components\Placeholder::make('discharge_uploaded_at')
                             ->label(__('app.labels.uploaded_at'))
                             ->content(fn (?Encounter $record) => $record?->dischargePaper?->created_at?->toDateTimeString() ?? '—'),
@@ -381,7 +387,7 @@ class HospitalizationResource extends Resource
                                 ->visible(function (?Encounter $record) {
                                     $user = auth()->user();
 
-                                    return ($user?->isAdmin() || $user?->isStaff())
+                                    return ($user?->isAdmin() || $user?->isAdministration() || $user?->isStaff())
                                         && $record
                                         && ! $record->dischargePaper;
                                 })
@@ -417,7 +423,7 @@ class HospitalizationResource extends Resource
                                 ->visible(function (?Encounter $record) {
                                     $user = auth()->user();
 
-                                    return ($user?->isAdmin() || $user?->isStaff())
+                                    return ($user?->isAdmin() || $user?->isAdministration() || $user?->isStaff())
                                         && $record
                                         && $record->dischargePaper;
                                 })
@@ -448,6 +454,16 @@ class HospitalizationResource extends Resource
                                         ]);
                                     }
                                 }),
+                            FormAction::make('previewDischargeOriginal')
+                                ->label(__('app.actions.preview_discharge_original'))
+                                ->icon('heroicon-o-eye')
+                                ->visible(fn (?Encounter $record) => (bool) $record?->dischargePaper)
+                                ->url(fn (Encounter $record) => route('discharge-papers.preview', $record->dischargePaper), true),
+                            FormAction::make('previewDischargeQr')
+                                ->label(__('app.actions.preview_discharge_qr'))
+                                ->icon('heroicon-o-eye')
+                                ->visible(fn (?Encounter $record) => (bool) $record?->dischargePaper)
+                                ->url(fn (Encounter $record) => route('discharge-papers.preview-qr', $record->dischargePaper), true),
                             FormAction::make('downloadDischargeOriginal')
                                 ->label(__('app.actions.download_discharge_original'))
                                 ->icon('heroicon-o-arrow-down-tray')
@@ -610,7 +626,7 @@ class HospitalizationResource extends Resource
      * - 'space': 1K 4/2 (Floor 1, Room 4, Bed 2)
      * - 'full': Floor 1: 4/2 (Floor 1, Room 4, Bed 2)
      */
-    protected static function formatRoomNumber(?string $state, string $format = 'compact'): ?string
+    public static function formatRoomNumber(?string $state, string $format = 'compact'): ?string
     {
         if (! $state) {
             return null;
@@ -680,10 +696,14 @@ class HospitalizationResource extends Resource
         $token = $encounter->dischargePaper?->qr_token ?? Str::random(64);
 
         if ($replaceExisting && $encounter->dischargePaper) {
-            Storage::disk('local')->delete([
+            $filesToDelete = [
                 $encounter->dischargePaper->original_file_path,
                 $encounter->dischargePaper->qr_file_path,
-            ]);
+            ];
+            if ($encounter->dischargePaper->preview_file_path) {
+                $filesToDelete[] = $encounter->dischargePaper->preview_file_path;
+            }
+            Storage::disk('local')->delete($filesToDelete);
             $encounter->dischargePaper->delete();
         }
 
@@ -733,6 +753,14 @@ class HospitalizationResource extends Resource
             throw $e;
         }
 
+        $previewPath = "{$pathBase}/preview.pdf";
+
+        try {
+            $dischargeService->convertToPreviewPdf($qrPath, $previewPath);
+        } catch (\RuntimeException) {
+            $previewPath = null;
+        }
+
         $encounter->dischargePaper()->create([
             'patient_id' => $patient->id,
             'original_file_path' => $originalPath,
@@ -741,6 +769,7 @@ class HospitalizationResource extends Resource
             'qr_token' => $token,
             'mime_type' => Storage::disk('local')->mimeType($originalPath),
             'uploaded_by' => Auth::id(),
+            'preview_file_path' => $previewPath,
         ]);
     }
 }

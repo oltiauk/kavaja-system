@@ -5,6 +5,7 @@ namespace App\Filament\Resources\ArchivedHospitalizationResource\RelationManager
 use App\Filament\Resources\HospitalizationResource;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Support\Enums\FontWeight;
 use Filament\Tables;
 use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
@@ -24,16 +25,22 @@ class EncountersRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with('dischargePaper')->where('status', 'discharged')->orderBy('discharge_date', 'desc'))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['dischargePaper', 'patient.medicalInfo'])->where('status', 'discharged')->orderBy('discharge_date', 'desc'))
             ->columns([
                 Stack::make([
                     Split::make([
-                        Tables\Columns\TextColumn::make('type')
-                            ->label(__('app.labels.type'))
+                        Tables\Columns\TextColumn::make('patient.full_name')
+                            ->label(__('app.labels.patient'))
+                            ->weight(FontWeight::Bold)
+                            ->size(Tables\Columns\TextColumn\TextColumnSize::Large),
+                        Tables\Columns\TextColumn::make('room_number')
+                            ->label(__('app.labels.room_number'))
                             ->badge()
-                            ->color(fn (string $state) => $state === 'hospitalization' ? 'warning' : 'info')
-                            ->formatStateUsing(fn (string $state) => $state === 'hospitalization' ? __('app.labels.hospitalization') : __('app.labels.visit'))
-                            ->grow(false),
+                            ->color('info')
+                            ->icon('heroicon-m-home')
+                            ->grow(false)
+                            ->formatStateUsing(fn (?string $state): ?string => HospitalizationResource::formatRoomNumber($state))
+                            ->placeholder(null),
                         Tables\Columns\TextColumn::make('status')
                             ->label(__('app.labels.status'))
                             ->badge()
@@ -48,12 +55,15 @@ class EncountersRelationManager extends RelationManager
                             ->limit(80)
                             ->color('primary')
                             ->placeholder('—'),
-                    ]),
-                    Split::make([
-                        Tables\Columns\TextColumn::make('main_complaint')
-                            ->label(__('app.labels.main_complaint'))
+                        Tables\Columns\TextColumn::make('patient.medicalInfo.allergies')
+                            ->icon('heroicon-m-exclamation-triangle')
+                            ->color('danger')
+                            ->weight(FontWeight::SemiBold)
+                            ->size(Tables\Columns\TextColumn\TextColumnSize::Small)
                             ->limit(60)
-                            ->color('gray'),
+                            ->formatStateUsing(fn (?string $state) => $state ? "! {$state}" : null)
+                            ->grow(false)
+                            ->placeholder(''),
                     ]),
                     Split::make([
                         Tables\Columns\TextColumn::make('doctor_name')
@@ -68,7 +78,8 @@ class EncountersRelationManager extends RelationManager
                         Tables\Columns\TextColumn::make('discharge_date')
                             ->label(__('app.labels.discharge_date'))
                             ->icon('heroicon-m-arrow-right-on-rectangle')
-                            ->dateTime('d M Y, H:i'),
+                            ->dateTime('d M Y, H:i')
+                            ->placeholder('—'),
                     ]),
                 ])->space(2),
             ])

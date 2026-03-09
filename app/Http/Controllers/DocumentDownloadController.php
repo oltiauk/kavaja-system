@@ -54,7 +54,7 @@ class DocumentDownloadController extends Controller
     {
         $this->authorize('view', $document);
 
-        if (! str_starts_with($document->mime_type, 'image/')) {
+        if (! str_starts_with($document->mime_type, 'image/') && $document->mime_type !== 'application/pdf') {
             abort(404);
         }
 
@@ -65,6 +65,46 @@ class DocumentDownloadController extends Controller
         return response()->file(
             Storage::disk('local')->path($document->file_path),
             ['Content-Type' => $document->mime_type]
+        );
+    }
+
+    public function dischargePreview(DischargePaper $dischargePaper)
+    {
+        $this->authorize('view', $dischargePaper);
+
+        $previewPath = $dischargePaper->preview_file_path;
+
+        if (! $previewPath || ! Storage::disk('local')->exists($previewPath)) {
+            $previewPath = $dischargePaper->original_file_path;
+        }
+
+        if (! $previewPath || ! Storage::disk('local')->exists($previewPath)) {
+            abort(404);
+        }
+
+        return response()->file(
+            Storage::disk('local')->path($previewPath),
+            ['Content-Type' => 'application/pdf']
+        );
+    }
+
+    public function dischargePreviewQr(DischargePaper $dischargePaper)
+    {
+        $this->authorize('view', $dischargePaper);
+
+        $previewPath = $dischargePaper->preview_file_path;
+
+        if (! $previewPath || ! Storage::disk('local')->exists($previewPath)) {
+            $previewPath = $dischargePaper->qr_file_path;
+        }
+
+        if (! $previewPath || ! Storage::disk('local')->exists($previewPath)) {
+            abort(404);
+        }
+
+        return response()->file(
+            Storage::disk('local')->path($previewPath),
+            ['Content-Type' => 'application/pdf']
         );
     }
 

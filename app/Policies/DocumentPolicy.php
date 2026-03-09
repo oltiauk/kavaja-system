@@ -19,17 +19,17 @@ class DocumentPolicy
 
     public function create(User $user): bool
     {
-        return $user->isAdmin() || $user->isStaff();
+        return $user->isAdmin() || $user->isAdministration() || $user->isStaff();
     }
 
     public function update(User $user, Document $document): bool
     {
-        return $user->isAdmin() || $user->isStaff();
+        return $user->isAdmin() || $user->isAdministration() || $user->isStaff();
     }
 
     public function delete(User $user, Document $document): bool
     {
-        return $user->isAdmin() || $user->isStaff();
+        return $user->isAdmin() || $user->isAdministration() || $user->isStaff();
     }
 
     public function restore(User $user, Document $document): bool

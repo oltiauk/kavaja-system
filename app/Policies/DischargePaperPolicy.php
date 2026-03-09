@@ -19,17 +19,17 @@ class DischargePaperPolicy
 
     public function create(User $user): bool
     {
-        return $user->isAdmin() || $user->isStaff();
+        return $user->isAdmin() || $user->isAdministration() || $user->isStaff();
     }
 
     public function update(User $user, DischargePaper $dischargePaper): bool
     {
-        return $user->isAdmin() || $user->isStaff();
+        return $user->isAdmin() || $user->isAdministration() || $user->isStaff();
     }
 
     public function delete(User $user, DischargePaper $dischargePaper): bool
     {
-        return $user->isAdmin() || $user->isStaff();
+        return $user->isAdmin() || $user->isAdministration() || $user->isStaff();
     }
 
     public function restore(User $user, DischargePaper $dischargePaper): bool

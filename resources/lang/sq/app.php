@@ -13,6 +13,8 @@ return [
         'readmit' => 'Riprano',
         'download_discharge_original' => 'Shkarko fletëlëshimin (Origjinal)',
         'download_discharge_qr' => 'Shkarko fletëlëshimin (Me QR)',
+        'preview_discharge_original' => 'Shiko fletëlëshimin (Origjinal)',
+        'preview_discharge_qr' => 'Shiko fletëlëshimin (Me QR)',
         'download_surgical_notes' => 'Shkarko shënimet kirurgjikale',
         'print_visit' => 'Printo vizitën',
         'generate_report' => 'Gjenero raportin',

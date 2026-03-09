@@ -19,26 +19,26 @@ class EncounterPolicy
 
     public function create(User $user): bool
     {
-        return $user->isAdmin() || $user->isAdministration();
+        return $user->isAdmin() || $user->isAdministration() || $user->isStaff();
     }
 
     public function update(User $user, Encounter $encounter): bool
     {
-        return $user->isAdmin() || $user->isStaff();
+        return $user->isAdmin() || $user->isAdministration() || $user->isStaff();
     }
 
     public function delete(User $user, Encounter $encounter): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || $user->isAdministration() || $user->isStaff();
     }
 
     public function restore(User $user, Encounter $encounter): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || $user->isAdministration() || $user->isStaff();
     }
 
     public function forceDelete(User $user, Encounter $encounter): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || $user->isAdministration() || $user->isStaff();
     }
 }

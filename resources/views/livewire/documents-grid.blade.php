@@ -1,31 +1,56 @@
-<div class="space-y-4">
+<div class="space-y-4" x-data="{ viewMode: localStorage.getItem('doc-view-mode') || 'cards' }" x-init="$watch('viewMode', val => localStorage.setItem('doc-view-mode', val))">
     {{-- Header --}}
     <div class="flex items-center justify-between">
         <h3 class="text-base font-semibold text-gray-950 dark:text-white">
             {{ __('app.labels.documents') }}
         </h3>
-        @if(auth()->user()?->isAdmin() || auth()->user()?->isStaff())
-            <button
-                wire:click="openUploadModal"
-                type="button"
-                class="fi-btn fi-btn-size-md fi-btn-color-primary inline-flex items-center justify-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors bg-primary-600 hover:bg-primary-500"
-            >
-                <x-filament::icon icon="heroicon-m-arrow-up-tray" class="h-5 w-5" />
-                {{ __('app.actions.upload_document') }}
-            </button>
-        @endif
+        <div class="flex items-center gap-2">
+            <div class="flex rounded-lg border border-gray-300 dark:border-gray-600">
+                <button
+                    type="button"
+                    @click="viewMode = 'cards'"
+                    :class="viewMode === 'cards' ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white' : 'text-gray-500 dark:text-gray-400'"
+                    class="rounded-l-lg p-1.5 transition"
+                >
+                    <x-filament::icon icon="heroicon-o-squares-2x2" class="h-4 w-4" />
+                </button>
+                <button
+                    type="button"
+                    @click="viewMode = 'rows'"
+                    :class="viewMode === 'rows' ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white' : 'text-gray-500 dark:text-gray-400'"
+                    class="rounded-r-lg p-1.5 transition"
+                >
+                    <x-filament::icon icon="heroicon-o-bars-3" class="h-4 w-4" />
+                </button>
+            </div>
+            @if(auth()->user()?->isAdmin() || auth()->user()?->isAdministration() || auth()->user()?->isStaff())
+                <button
+                    wire:click="openUploadModal"
+                    type="button"
+                    class="fi-btn fi-btn-size-md fi-btn-color-primary inline-flex items-center justify-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors bg-primary-600 hover:bg-primary-500"
+                >
+                    <x-filament::icon icon="heroicon-m-arrow-up-tray" class="h-5 w-5" />
+                    {{ __('app.actions.upload_document') }}
+                </button>
+            @endif
+        </div>
     </div>
 
-    {{-- Documents Grid --}}
+    {{-- Documents --}}
     @if($documents->isEmpty())
         <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 p-12 dark:border-gray-700">
             <x-filament::icon icon="heroicon-o-document" class="mb-4 h-12 w-12 text-gray-400" />
             <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('app.messages.no_documents') }}</p>
         </div>
     @else
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        <div x-show="viewMode === 'cards'" class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
             @foreach($documents as $document)
                 <x-document-card :document="$document" :show-delete="true" />
+            @endforeach
+        </div>
+        <div x-show="viewMode === 'rows'" class="space-y-2">
+            @foreach($documents as $document)
+                <x-document-row :document="$document" :show-delete="true" />
             @endforeach
         </div>
     @endif

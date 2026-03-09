@@ -28,6 +28,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/documents/{document}/download', [DocumentDownloadController::class, 'document'])->name('documents.download');
     Route::get('/discharge-papers/{dischargePaper}/original', [DocumentDownloadController::class, 'dischargeOriginal'])->name('discharge-papers.original');
     Route::get('/discharge-papers/{dischargePaper}/with-qr', [DocumentDownloadController::class, 'dischargeWithQr'])->name('discharge-papers.with-qr');
+    Route::get('/discharge-papers/{dischargePaper}/preview', [DocumentDownloadController::class, 'dischargePreview'])->name('discharge-papers.preview');
+    Route::get('/discharge-papers/{dischargePaper}/preview-qr', [DocumentDownloadController::class, 'dischargePreviewQr'])->name('discharge-papers.preview-qr');
     Route::get('/encounters/{encounter}/surgical-notes', [DocumentDownloadController::class, 'surgicalNotes'])->name('encounters.surgical-notes');
     Route::get('/encounters/{encounter}/lab-results', [DocumentDownloadController::class, 'labResults'])->name('encounters.lab-results');
     Route::get('/encounters/{encounter}/operative-work', [DocumentDownloadController::class, 'operativeWork'])->name('encounters.operative-work');

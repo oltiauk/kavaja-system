@@ -23,6 +23,39 @@ class DischargePaperService
         }
     }
 
+    public function convertToPreviewPdf(string $inputPath, string $outputPdfPath): void
+    {
+        $extension = strtolower(pathinfo($inputPath, PATHINFO_EXTENSION));
+
+        if (! Storage::disk('local')->exists($inputPath)) {
+            throw new \RuntimeException("File not found at: {$inputPath}");
+        }
+
+        Storage::disk('local')->makeDirectory(dirname($outputPdfPath));
+
+        if ($extension === 'pdf') {
+            Storage::disk('local')->copy($inputPath, $outputPdfPath);
+
+            return;
+        }
+
+        if (in_array($extension, ['doc', 'docx'], true)) {
+            $fullInputPath = Storage::disk('local')->path($inputPath);
+            $fullOutputPath = Storage::disk('local')->path($outputPdfPath);
+
+            \PhpOffice\PhpWord\Settings::setPdfRendererName(\PhpOffice\PhpWord\Settings::PDF_RENDERER_DOMPDF);
+            \PhpOffice\PhpWord\Settings::setPdfRendererPath(base_path('vendor/dompdf/dompdf'));
+
+            $phpWord = WordIOFactory::load($fullInputPath);
+            $pdfWriter = WordIOFactory::createWriter($phpWord, 'PDF');
+            $pdfWriter->save($fullOutputPath);
+
+            return;
+        }
+
+        throw new \RuntimeException("Unsupported file type for preview: {$extension}");
+    }
+
     private function addQrToPdf(string $inputPath, string $outputPath, string $qrImage): void
     {
         $fullPath = Storage::disk('local')->path($inputPath);
